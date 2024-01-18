@@ -12,7 +12,7 @@ import os
 # print(count)
 
 
-# Test copying files over
+# # Test copying files over
 # # Set the current working directory
 # os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
 # # Set the source and the destination folders
@@ -22,7 +22,7 @@ import os
 # # Copy file
 # os.system('copy ' + src+'\\0.jpg ' + dst + '\\0.jpg') # NOTE: can rename file when copying over to dst
 
-# # Deletes a file:
+# # Test deleting a file
 # os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
 # dst = os.getcwd() + "\\test_images"
 # os.remove(dst +'\\1.jpg')
@@ -40,7 +40,6 @@ while True:
         for image in images:
             count += 1
         if count > 3:
-            print(cur_num)
             os.remove(dst + '\\' + str(cur_num-3) + '.jpg')
         cur_num += 1
         count = 0
