@@ -4,7 +4,7 @@ import os
 
 # Test counting number of files in directory
 # count = 0
-# robot_images = [cv.imread(image) for image in glob.glob("robot_steps/*.jpg")]
+# robot_images = [cv.imread(image) for image in glob.glob("test_robot_steps/*.jpg")]
 # for image in robot_images:
 #     # cv.imshow('img', image)
 #     # cv.waitKey(1000)
@@ -15,7 +15,7 @@ import os
 # # Set the current working directory
 # os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
 # # Set the source and the destination folders
-# src = os.getcwd() + "\\robot_steps"
+# src = os.getcwd() + "\\test_robot_steps"
 # dst = os.getcwd() + "\\test_images"
 # print(src)
 # # Copy file
@@ -31,7 +31,7 @@ import os
 cur_num = 0
 count = 0
 os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
-src = os.getcwd() + "\\robot_steps"
+src = os.getcwd() + "\\test_robot_steps"
 dst = os.getcwd() + "\\test_images"
 while True:
     input_char = input("Click 'y' to generate an image, 'e' to quit: ")
