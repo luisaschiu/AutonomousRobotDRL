@@ -1,11 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+# TODO: code what happens when the robot reached the goal, maybe in class_qlearn?
 
 class Maze:
-    def __init__(self, maze, start_pt: tuple, goal_pt: tuple):
+    def __init__(self, maze, marker_filepath, start_pt: tuple, goal_pt: tuple, start_orientation):
         self.reset_maze = np.copy(maze)
         self.maze = maze
         self.robot_location = start_pt
+        self.robot_orientation = start_orientation
+        self.marker = mpimg.imread(marker_filepath)
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         self.traversed = []
@@ -22,9 +27,21 @@ class Maze:
         ax.set_yticklabels([])
         ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START')
         ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL')
-        self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
+        # Overlay marker onto the robot location
+        # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
+        file = "images/marker8.jpg"
+        marker = mpimg.imread(file)
+        marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
+        imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
+        # TODO: Make zoom relative to maze size above, or else changing to a 
+        # larger maze may make the marker image too large compared to small maze squares
+        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
+        ax.add_artist(ab)
+        # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
+        # Color the traversed locations
         for x, y in self.traversed:
-            self.maze[x, y] = 0.5
+            # NOTE: Numpy array axes are different from what I defined as the axes.
+            self.maze[y, x] = 0.5
         img = plt.imshow(self.maze, interpolation='none', cmap='binary')
         img = plt.show()
         return img
@@ -33,57 +50,112 @@ class Maze:
         self.maze = self.reset_maze
         self.robot_location = self.start_pt
         # self.traversed = np.array([])
+        # Reset previously traversed locations for the next episode
         self.traversed = []
 
     def move_robot(self, direction:str):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
-        # TO-DO: TAKE INTO ACCOUNT IF IT HITS A MAZE EDGE.
-        # TO-DO: Consider if I still need to append to a traversed location in line above, if robot does not move from invalid move.
-        if direction == "LEFT":
+        # TODO: TAKE INTO ACCOUNT IF IT HITS A MAZE EDGE?
+        # TODO: Consider if I still need to append to a traversed location in line above, if robot does not move from invalid move.
+        if direction == "UP":
             test_location = (robot_x, robot_y-1)
             # Maze Edge Check
             if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
                 print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
-            elif self.maze[test_location[0], test_location[1]] == 1:
+            elif self.maze[test_location[1], test_location[0]] == 1:
                 print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x, robot_y-1)
-        elif direction == "RIGHT":
+        elif direction == "DOWN":
             test_location = (robot_x, robot_y+1)
             # Maze Edge Check
             if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
                 print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
-            elif self.maze[test_location[0], test_location[1]] == 1:
+            elif self.maze[test_location[1], test_location[0]] == 1:
                 print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x, robot_y+1)
-        elif direction == "UP":
+        elif direction == "LEFT":
             test_location = (robot_x-1, robot_y)
             # Maze Edge Check
-            if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
+            if ((test_location[1]) < 0 or (test_location[0] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
                 print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
-            elif self.maze[test_location[0], test_location[1]] == 1:
+            elif self.maze[test_location[1], test_location[0]] == 1:
                 print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x-1, robot_y)
-        elif direction == "DOWN":
+        elif direction == "RIGHT":
             test_location = (robot_x+1, robot_y)
             # Maze Edge Check
-            if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
+            if ((test_location[1]) < 0 or (test_location[0] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
                 print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
-            elif self.maze[test_location[0], test_location[1]] == 1:
+            elif self.maze[test_location[1], test_location[0]] == 1:
                 print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x+1, robot_y)
+                
+    # def move_robot(self, direction:str):
+    #     robot_x, robot_y = self.robot_location[0], self.robot_location[1]
+    #     # TODO: TAKE INTO ACCOUNT IF IT HITS A MAZE EDGE?
+    #     # TODO: Consider if I still need to append to a traversed location in line above, if robot does not move from invalid move.
+    #     if direction == "LEFT":
+    #         test_location = (robot_x, robot_y-1)
+    #         # Maze Edge Check
+    #         if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
+    #             print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+    #         # Wall Check
+    #         elif self.maze[test_location[0], test_location[1]] == 1:
+    #             print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+    #         else:
+    #             self.traversed.append((robot_x, robot_y))
+    #             self.robot_location = (robot_x, robot_y-1)
+    #     elif direction == "RIGHT":
+    #         test_location = (robot_x, robot_y+1)
+    #         # Maze Edge Check
+    #         if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
+    #             print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+    #         # Wall Check
+    #         elif self.maze[test_location[0], test_location[1]] == 1:
+    #             print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+    #         else:
+    #             self.traversed.append((robot_x, robot_y))
+    #             self.robot_location = (robot_x, robot_y+1)
+    #     elif direction == "UP":
+    #         test_location = (robot_x-1, robot_y)
+    #         # Maze Edge Check
+    #         if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
+    #             print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+    #         # Wall Check
+    #         elif self.maze[test_location[0], test_location[1]] == 1:
+    #             print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+    #         else:
+    #             self.traversed.append((robot_x, robot_y))
+    #             self.robot_location = (robot_x-1, robot_y)
+    #     elif direction == "DOWN":
+    #         test_location = (robot_x+1, robot_y)
+    #         # Maze Edge Check
+    #         if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
+    #             print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+    #         # Wall Check
+    #         elif self.maze[test_location[0], test_location[1]] == 1:
+    #             print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+    #         else:
+    #             self.traversed.append((robot_x, robot_y))
+    #             self.robot_location = (robot_x+1, robot_y)
 
+    def reorient_marker():
+        pass
+    # def available_actions(self, direction:str):
+    #     robot_x, robot_y = self.robot_location[0], self.robot_location[1]
+                
     # def check_move(self, direction:str):
     #     robot_x, robot_y = self.robot_location[0], self.robot_location[1]
     #     if direction == "LEFT":

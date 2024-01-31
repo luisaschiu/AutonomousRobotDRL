@@ -1,5 +1,6 @@
 import class_maze
 
+# CODE UNDER CONSTRUCTION, trying to create a video for the robot traveling.
 def show(maze: class_maze):
     plt.grid(True)
     nrows, ncols = self.maze.shape

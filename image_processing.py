@@ -11,7 +11,6 @@ import os
 #     count += 1
 # print(count)
 
-
 # # Test copying files over
 # # Set the current working directory
 # os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
@@ -20,13 +19,15 @@ import os
 # dst = os.getcwd() + "\\test_images"
 # print(src)
 # # Copy file
-# os.system('copy ' + src+'\\0.jpg ' + dst + '\\0.jpg') # NOTE: can rename file when copying over to dst
+# os.system('copy ' + src+'\\0.jpg ' + dst + '\\0.jpg') # NOTE: can rename file when copying over to dst if desired.
 
 # # Test deleting a file
 # os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
 # dst = os.getcwd() + "\\test_images"
 # os.remove(dst +'\\1.jpg')
 
+# The following code copies images from a src folder into a dst folder, as if it is generating an image every time step.
+# The dst folder saves each time step and gets rid of the oldest one once it saves 3 time steps.
 cur_num = 0
 count = 0
 os.chdir("C:/Users/luisa/Documents/AutonomousRobotDRL")
@@ -45,4 +46,4 @@ while True:
         count = 0
     elif input_char == 'e':
         exit()
-# TODO: account for edge case for cur_num exceeding number of images in src directory
+# Possible TODO: account for edge case for cur_num exceeding number of images in src directory
