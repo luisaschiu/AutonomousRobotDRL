@@ -1,7 +1,12 @@
 import numpy as np
 from class_maze import Maze
-import AruCo_functions
+import ArUco_functions
+import cv2 as cv
+import os
+import glob
 
+for filename in glob.glob('robot_steps/*.jpg'):
+    os.remove(filename)
 # Axis system will not follow numpy array's. Image pixels are read x horizontal axis (positive to the right),
 # y vertical axis (positive down). Internally, code will be edited such that it follows the x horizontal, 
 # y vertical axis system to prevent confusion. I chose to prioritize the image pixels over the numpy array, 
@@ -13,17 +18,50 @@ maze_array = np.array(
          [1.0, 1.0, 0.0, 1.0],
          [0.0, 1.0, 0.0, 0.0]])
 marker_filepath = "images/marker8.jpg"
-maze = Maze(maze_array, marker_filepath, (0,0), (2,3), 2)
+maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
 
 # Test AruCo functions, edited from computer vision project to follow the axes defined (x horizontal, y vertical)
 # Maze.show(maze)
 Maze.generate_img(maze)
-# AruCo_functions.arucode_location()
+# location = (AruCo_functions.aruco_location())
 print(maze.traversed)
 Maze.move_robot(maze, "DOWN")
-print(maze.traversed)
 # Maze.show(maze)
 Maze.generate_img(maze)
+print(maze.traversed)
+Maze.move_robot(maze, "RIGHT")
+# Maze.show(maze)
+Maze.generate_img(maze)
+print(maze.traversed)
+Maze.move_robot(maze, "RIGHT")
+# Maze.show(maze)
+Maze.generate_img(maze)
+print(maze.traversed)
+# Maze.move_robot(maze, "DOWN")
+# # Maze.show(maze)
+# Maze.generate_img(maze)
+# print(maze.traversed)
+# Maze.move_robot(maze, "DOWN")
+# # Maze.show(maze)
+# Maze.generate_img(maze)
+# print(maze.traversed)
+
+
+# Testing AruCo marker angle and location parameters after images are generated
+# images = glob.glob('robot_steps/*.jpg')
+# frame_num = 0
+# filePath = 'robot_steps/'
+# dictionary = cv.aruco.getPredefinedDictionary(cv.aruco.DICT_6X6_250)
+# print("ArUco location in pixels for images found:")
+# while frame_num < (len(images)):
+#     # print(str(frame_num) + ' to ' + str(int(frame_num + 1)))
+#     img = cv.imread(filePath+str(frame_num)+'.jpg')
+#     location = ArUco_functions.aruco_location(dictionary, img)
+#     angle = ArUco_functions.aruco_angle(dictionary, img)
+#     print(location)
+#     print(angle)
+#     # ArUco_functions.show_aruco_param(dictionary, img)
+#     frame_num += 1
 
 
 # Testing overall functions for moving robot and maze traversing
