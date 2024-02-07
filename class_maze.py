@@ -1,4 +1,5 @@
 import numpy as np
+import cv2 as cv
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
@@ -19,6 +20,9 @@ class Maze:
         self.goal_pt = goal_pt
         self.traversed = []
         self.time_step = 0
+        self.cur_state_img = self.generate_img()
+        self.min_reward = -0.5*maze.size
+        self.total_reward = 0
 #        self.traversed = np.array([]) # creates an empty numpy array
 
     def show(self):
@@ -84,6 +88,11 @@ class Maze:
         fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches='tight')
         # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
         plt.close(fig)
+        image = cv.imread('robot_steps/' + str(self.time_step) + '.jpg')
+        # cv.imshow('img', image)
+        # cv.waitKey(0)
+        return image
+        
 
     def reset(self):
         self.maze = self.reset_maze
@@ -93,7 +102,6 @@ class Maze:
         self.traversed = []
         self.timestep = 0
 
-    # Consider making this a separate function or class. Maybe class robot?
     def move_robot(self, direction:str):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # TODO: TAKE INTO ACCOUNT IF IT HITS A MAZE EDGE?
@@ -113,7 +121,6 @@ class Maze:
                     self.robot_orientation = expected_angle//90
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x, robot_y-1)
-                self.time_step += 1
         elif direction == "DOWN":
             test_location = (robot_x, robot_y+1)
             expected_angle = 180
@@ -129,7 +136,6 @@ class Maze:
                     self.robot_orientation = expected_angle//90
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x, robot_y+1)
-                self.time_step += 1
         elif direction == "LEFT":
             test_location = (robot_x-1, robot_y)
             expected_angle = 90
@@ -145,7 +151,6 @@ class Maze:
                     self.robot_orientation = expected_angle//90
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x-1, robot_y)
-                self.time_step += 1
         elif direction == "RIGHT":
             test_location = (robot_x+1, robot_y)
             expected_angle = 270
@@ -161,36 +166,42 @@ class Maze:
                     self.robot_orientation = expected_angle//90
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x+1, robot_y)
-                self.time_step += 1
-
-    # def available_actions(self, direction:str):
-    #     robot_x, robot_y = self.robot_location[0], self.robot_location[1]
                 
-    # def check_move(self, direction:str):
+    # def available_actions(self, direction:str, test_location):
     #     robot_x, robot_y = self.robot_location[0], self.robot_location[1]
-    #     if direction == "LEFT":
-    #         test_location = (robot_x, robot_y-1)
-    #     elif direction == "RIGHT":
-    #         test_location = (robot_x, robot_y+1)
-    #     elif direction == "UP":
-    #         test_location = (robot_x-1, robot_y)
-    #     elif direction == "DOWN":
-    #         test_location = (robot_x+1, robot_y)
-    #     # If wall detected:
-    #     if self.maze[test_location[0], test_location[1]] == 1:
-    #         print ("ERROR: Wall detected. Cannot traverse.")
-    #         return
-    #     # TO-DO: Consider what if robot exits the maze?
-    #     # TO-DO: If robot stays in place, do I add that to the traversed list too?
-    #     else:
-    #         if direction == "LEFT":
-    #             return 4
-    #         elif direction == "RIGHT":
-    #             return 2
-    #         elif direction == "UP":
-    #             return 1
-    #         elif direction == "DOWN":
-    #             return 3
+    #     valid_actions = ["UP", "DOWN", "LEFT", "RIGHT"]
+
+    def get_reward(self):
+        # NOTE: Do I account for maze edges or walls here?
+        robot_x, robot_y = self.robot_location[0], self.robot_location[1]
+        # Robot reached the goal
+        if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
+            return 1
+        # Robot has already visited this spot
+        if (robot_x, robot_y) in self.traversed:
+            return -0.25
+        else:
+            # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
+            return -1
+    
+    def game_status(self):
+        robot_x, robot_y = self.robot_location[0], self.robot_location[1]
+        # If rewards value is less than the minimum rewards allowed
+        if self.total_reward < self.min_reward:
+            return 'lose'
+        # If goal is reached
+        if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
+            return 'win'
+        return 'not over'
+
+    def take_action(self, action: str):
+        self.move_robot(action)
+        reward = self.get_reward()
+        self.total_reward += reward
+        status = self.game_status()
+        self.time_step += 1
+        cur_state_img = self.generate_img()
+        return (cur_state_img, reward, status)
 
     def produce_video():
         pass

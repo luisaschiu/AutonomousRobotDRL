@@ -17,34 +17,22 @@ maze_array = np.array(
          [0.0, 0.0, 0.0, 0.0],
          [1.0, 1.0, 0.0, 1.0],
          [0.0, 1.0, 0.0, 0.0]])
+
 marker_filepath = "images/marker8.jpg"
 maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
 
-# Test AruCo functions, edited from computer vision project to follow the axes defined (x horizontal, y vertical)
-# Maze.show(maze)
-Maze.generate_img(maze)
-# location = (AruCo_functions.aruco_location())
-print(maze.traversed)
-Maze.move_robot(maze, "DOWN")
-# Maze.show(maze)
-Maze.generate_img(maze)
-print(maze.traversed)
-Maze.move_robot(maze, "RIGHT")
-# Maze.show(maze)
-Maze.generate_img(maze)
-print(maze.traversed)
-Maze.move_robot(maze, "RIGHT")
-# Maze.show(maze)
-Maze.generate_img(maze)
-print(maze.traversed)
-# Maze.move_robot(maze, "DOWN")
-# # Maze.show(maze)
-# Maze.generate_img(maze)
 # print(maze.traversed)
-# Maze.move_robot(maze, "DOWN")
-# # Maze.show(maze)
-# Maze.generate_img(maze)
+maze.take_action("DOWN")
 # print(maze.traversed)
+maze.take_action( "RIGHT")
+# print(maze.traversed)
+maze.take_action("RIGHT")
+# print(maze.traversed)
+maze.take_action("DOWN")
+# print(maze.traversed)
+maze.take_action("DOWN")
+# print(maze.traversed)
+maze.take_action("RIGHT")
 
 
 # Testing AruCo marker angle and location parameters after images are generated
