@@ -107,7 +107,7 @@ class DQN:
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
             # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
-            # main_q would theoretically yield a tensor vector of size (batch_size)
+            # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
             main_q = tf.reduce_sum(self.model(state_batch) * tf.one_hot(action_batch, self.action_size, 1.0, 0.0), axis=1)
             loss = losses.Huber(tf.stop_gradient(expected_q), main_q)
 

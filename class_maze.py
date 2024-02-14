@@ -7,7 +7,6 @@ from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import ArUco_functions
 import os
 import glob
-# TODO: code what happens when the robot reached the goal, maybe in class_qlearn?
 
 class Maze:
     def __init__(self, maze, marker_filepath, start_pt: tuple, goal_pt: tuple, start_orientation):
