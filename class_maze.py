@@ -19,8 +19,6 @@ class Maze:
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         self.traversed = []
-        self.time_step = 0
-        self.cur_state_img = self.generate_img()
         self.min_reward = -0.5*maze.size
         self.total_reward = 0
 #        self.traversed = np.array([]) # creates an empty numpy array
@@ -55,7 +53,7 @@ class Maze:
         plt.show()
         return img
 
-    def generate_img(self):
+    def generate_img(self, time_step):
         # plt.grid(True)
         nrows, ncols = self.maze.shape
         # print(self.maze.shape)
@@ -85,22 +83,25 @@ class Maze:
         if not os.path.exists('robot_steps/'):
             os.makedirs('robot_steps/')
         # Save as a .jpg picture, named as current time step
-        fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches='tight')
+        fig = plt.savefig('robot_steps/' + str(time_step) + '.jpg', bbox_inches='tight')
         # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
         plt.close(fig)
-        image = cv.imread('robot_steps/' + str(self.time_step) + '.jpg')
+        image = cv.imread('robot_steps/' + str(time_step) + '.jpg')
         # cv.imshow('img', image)
         # cv.waitKey(0)
         return image
         
 
-    def reset(self):
+    def reset(self, time_step):
         self.maze = self.reset_maze
         self.robot_location = self.start_pt
         # self.traversed = np.array([])
         # Reset previously traversed locations for the next episode
         self.traversed = []
         self.timestep = 0
+        self.total_reward = 0
+        cur_state_img = self.generate_img(time_step)
+        return cur_state_img
 
     def move_robot(self, direction:str):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -184,24 +185,30 @@ class Maze:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             return -1
     
-    def game_status(self):
+    def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # If rewards value is less than the minimum rewards allowed
         if self.total_reward < self.min_reward:
-            return 'lose'
+            return True
         # If goal is reached
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-            return 'win'
-        return 'not over'
+            return True
+        return False
+        # if self.total_reward < self.min_reward:
+        #     return 'lose'
+        # # If goal is reached
+        # if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
+        #     return 'win'
+        # return 'not over'
 
-    def take_action(self, action: str):
+    def take_action(self, action: str, time_step):
         self.move_robot(action)
         reward = self.get_reward()
         self.total_reward += reward
-        status = self.game_status()
-        self.time_step += 1
-        cur_state_img = self.generate_img()
-        return (cur_state_img, reward, status)
+        game_over = self.game_over()
+        # self.time_step += 1
+        new_state_img = self.generate_img(time_step)
+        return (new_state_img, reward, game_over)
 
     def produce_video():
         pass

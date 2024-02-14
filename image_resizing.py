@@ -8,8 +8,8 @@ def preprocess_image(image):
     y_channel = yuv_image[:,:,0]
     
     # Resize Y channel to 84x84
-    resized_image = cv2.resize(y_channel, (150, 150))
-    
+    # resized_image = cv2.resize(y_channel, (150, 150))
+    resized_image = cv2.resize(y_channel, (84, 84))
     return resized_image
 
 if __name__ == "__main__":
@@ -17,3 +17,4 @@ if __name__ == "__main__":
     processed_img = preprocess_image(image)
     cv2.imshow('img', processed_img)
     cv2.waitKey(0)
+    print(processed_img.shape)
