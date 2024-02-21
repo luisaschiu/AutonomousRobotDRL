@@ -60,4 +60,4 @@ if __name__ == "__main__":
         cur_stacked_images.append(init_state)
         print(tf.constant((cur_stacked_images), dtype = tf.float32))
         # state = tf.expand_dims(cur_stacked_images, axis=0)  # Adding batch dimension
-        # print(state)
+        print(state)

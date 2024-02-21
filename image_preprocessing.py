@@ -1,4 +1,5 @@
 import cv2
+import tensorflow as tf
 
 def preprocess_image(image):
     # Convert RGB image to YUV color space
@@ -14,7 +15,9 @@ def preprocess_image(image):
 
 if __name__ == "__main__":
     image = cv2.imread('robot_steps/0.jpg')
+    print(image.shape)
     processed_img = preprocess_image(image)
     cv2.imshow('img', processed_img)
     cv2.waitKey(0)
     print(processed_img.shape)
+    # print(tf.constant((processed_img), dtype = tf.float32))
