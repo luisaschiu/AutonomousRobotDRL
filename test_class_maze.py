@@ -20,19 +20,25 @@ maze_array = np.array(
 
 marker_filepath = "images/marker8.jpg"
 maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-
+print(maze.get_available_actions())
 # print(maze.traversed)
-maze.take_action("DOWN")
+maze.take_action("DOWN", 0)
+print(maze.get_available_actions())
 # print(maze.traversed)
-maze.take_action( "RIGHT")
+maze.take_action( "RIGHT", 1)
+print(maze.get_available_actions())
 # print(maze.traversed)
-maze.take_action("RIGHT")
+maze.take_action("RIGHT", 2)
+print(maze.get_available_actions())
 # print(maze.traversed)
-maze.take_action("DOWN")
+maze.take_action("DOWN", 3)
+print(maze.get_available_actions())
 # print(maze.traversed)
-maze.take_action("DOWN")
+maze.take_action("DOWN", 4)
+print(maze.get_available_actions())
 # print(maze.traversed)
-maze.take_action("RIGHT")
+maze.take_action("RIGHT", 5)
+print(maze.get_available_actions())
 
 
 # Testing AruCo marker angle and location parameters after images are generated

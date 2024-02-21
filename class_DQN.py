@@ -23,9 +23,11 @@ class DQN:
         self.max_timesteps = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
         self.model = self._build_model()
+        
         self.target_model = self._build_model()
         self.update_target_network_freq = 1000
         self.agent_history_length = 4 # Number of images from each timestep stacked
+        self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         # NOTE: Bottom line of code might be redundant, unless I include the feature where I load existing trained weights from a given file
         self.target_model.set_weights(self.model.get_weights())
@@ -151,25 +153,30 @@ class DQN:
         return tf.stack(state_batch, axis=0), tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), tf.stack(next_state_batch, axis=0), tf.stack(game_over_batch, axis=0)
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
+        game_over = False
         for episode in range(num_episodes):
+            self.cur_stacked_images.clear()
             time_step = 0
             # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We don't have image preprocessing implemented just yet.
-            state = maze.reset_maze(time_step)
+            init_state = maze.reset_maze(time_step)
+            self.cur_stacked_images.append(init_state)
+            state = np.expand_dims(np.array(self.cur_stacked_images), axis=0)  # Adding batch dimension
             # episode_step = 0
             episode_score = 0.0
-            while time_step < self.max_timesteps:
+            while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(current_step=time_step)
                 action = self.get_action(state, expl_rate)
                 # NOTE: Should I only add to time_step if step was valid?
                 time_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-                (next_state, reward, game_over) = maze.take_action(action, time_step)
+                (next_state_img, reward, game_over) = maze.take_action(action, time_step)
                 episode_score += reward
+                next_state = self.cur_stacked_images.append(next_state_img)
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
                 # next_state = (state, action, next_state_img)
                 # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
-                self.remember(state, action, reward, next_state, game_over)
+                self.remember(state, action, reward, self.cur_stacked_images, game_over)
                 state = next_state
                 # From Google article pseudocode line 9: Sample random minibatch of transitions/experiences from D
                 if (time_step % self.agent_history_length == 0) and (time_step > self.replay_start_size):
