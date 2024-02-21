@@ -48,15 +48,15 @@ class DQN:
         model.add(layers.Dense(self.action_size, activation='linear', kernel_initializer=init))
         return model
 
-    def get_action(self, state, expl_rate):
-        actions = ["UP", "DOWN", "RIGHT", "LEFT"]
+    def get_action(self, state, available_actions, expl_rate):
         # Eventually, won't be constant 4 actions. Will filter out.
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
-            return random.choice(actions)
+            return random.choice(available_actions)
             # return random.randrange(self.action_size)
         else:
             max_val_idx =  np.argmax(self.model.predict(state)[0])
-            return actions[max_val_idx]
+            # TODO: Fix this portion of code, because max_val_idx may be a number larger than the available_actions given.
+            return available_actions[max_val_idx]
         
     def remember(self, state, action, reward, next_state, game_over):
         self.replay_memory.append((state, action, reward, next_state, game_over))
@@ -166,7 +166,8 @@ class DQN:
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(current_step=time_step)
-                action = self.get_action(state, expl_rate)
+                available_actions = maze.get_available_actions()
+                action = self.get_action(state, available_actions, expl_rate)
                 # NOTE: Should I only add to time_step if step was valid?
                 time_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
