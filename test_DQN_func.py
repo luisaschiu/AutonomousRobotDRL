@@ -5,6 +5,7 @@ import random
 from class_maze import Maze
 from tensorflow.python.keras import layers, initializers, models, optimizers, metrics, losses
 from tensorflow.python.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
+import cv2 as cv
 
 # def build_model():
 #         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
@@ -52,12 +53,27 @@ if __name__ == "__main__":
         marker_filepath = "images/marker8.jpg"
         maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
         model = build_model()
-        # Start of testing
+        # Start of testing image preprocessing
         cur_stacked_images = deque(maxlen=4)
         init_state = maze.reset(0)
+        blue_channel, green_channel, red_channel = cv.split(init_state)
+        init_state = blue_channel
+        # print(blue_channel)
+        # print(blue_channel.shape)
         cur_stacked_images.append(init_state)
         print(tf.constant((cur_stacked_images), dtype = tf.float32))
-        cur_stacked_images.append(init_state)
-        print(tf.constant((cur_stacked_images), dtype = tf.float32))
+
+        # cur_stacked_images.append(init_state)
+        # print(tf.constant((cur_stacked_images), dtype = tf.float32))
+
+        # Method of grabbing one channel only: indexing to one channel
+        # test = tf.constant((cur_stacked_images), dtype = tf.float32)
+        # print(test.shape)
+        # tester = test[:,:,:,2]
+        # print(tester)
+        # print(tester.shape)
+
+        # cur_stacked_images.append(init_state)
+        # print(tf.constant((cur_stacked_images), dtype = tf.float32))
         # state = tf.expand_dims(cur_stacked_images, axis=0)  # Adding batch dimension
-        print(state)
+        # print(state)
