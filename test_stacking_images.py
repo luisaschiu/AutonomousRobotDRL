@@ -27,14 +27,17 @@ arr3 = np.array(
 # test = deque([np.zeros((5, 5), dtype=np.uint8) for i in range(4)], maxlen=4)
 # print(test.size)
 
-# cur_stacked_images = deque(maxlen = 4)
-# cur_stacked_images.append(arr1)
-# print(cur_stacked_images)
-# cur_stacked_images.append(arr3)
-# print(cur_stacked_images)
+cur_stacked_images = deque(maxlen = 4)
+cur_stacked_images.append(arr1)
+print(cur_stacked_images)
+cur_stacked_images.append(arr3)
+print(cur_stacked_images)
+print("State: ")
+state = cur_stacked_images
 # state = tf.constant(cur_stacked_images, tf.float32)
 
-# print(state)
+print(state)
+print("test")
 # state = np.expand_dims(np.array(cur_stacked_images), axis=0)
 # print(state)
 # next_state = np.stack(cur_stacked_images, axis = 0)

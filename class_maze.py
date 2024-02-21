@@ -10,9 +10,10 @@ import glob
 
 class Maze:
     def __init__(self, maze, marker_filepath, start_pt: tuple, goal_pt: tuple, start_orientation):
-        self.reset_maze = np.copy(maze)
+        self.init_maze = np.copy(maze)
         self.maze = maze
         self.robot_location = start_pt
+        self.start_orientation = start_orientation
         self.robot_orientation = start_orientation//90
         self.marker = mpimg.imread(marker_filepath)
         self.start_pt = start_pt
@@ -92,8 +93,11 @@ class Maze:
         
 
     def reset(self, time_step):
-        self.maze = self.reset_maze
+        self.maze = self.init_maze
         self.robot_location = self.start_pt
+        # print("Robot_orientation: ", self.robot_orientation)
+        # print("Start_orientation: ", self.start_orientation)
+        self.robot_orientation = self.start_orientation//90
         # self.traversed = np.array([])
         # Reset previously traversed locations for the next episode
         self.traversed = []
@@ -111,10 +115,12 @@ class Maze:
             expected_angle = 0
             # Maze Edge Check
             if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
-                print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
             elif self.maze[test_location[1], test_location[0]] == 1:
-                print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 if (self.robot_orientation) != (expected_angle//90):
                     # print("Rotating Robot")
@@ -126,10 +132,12 @@ class Maze:
             expected_angle = 180
             # Maze Edge Check
             if ((test_location[0]) < 0 or (test_location[1] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
-                print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
             elif self.maze[test_location[1], test_location[0]] == 1:
-                print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 if (self.robot_orientation) != (expected_angle//90):
                     # print("Rotating Robot")
@@ -141,10 +149,12 @@ class Maze:
             expected_angle = 90
             # Maze Edge Check
             if ((test_location[1]) < 0 or (test_location[0] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
-                print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
             elif self.maze[test_location[1], test_location[0]] == 1:
-                print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 if (self.robot_orientation) != (expected_angle//90):
                     print("Rotating Robot")
@@ -156,10 +166,12 @@ class Maze:
             expected_angle = 270
             # Maze Edge Check
             if ((test_location[1]) < 0 or (test_location[0] < 0) or (test_location[0] > self.maze.shape[0]-1) or (test_location[1] > self.maze.shape[1]-1)):
-                print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Maze Edge detected. Cannot traverse " + direction + ".")
             # Wall Check
             elif self.maze[test_location[1], test_location[0]] == 1:
-                print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                # print ("ERROR: Wall detected. Cannot traverse " + direction + ".")
+                raise CustomError("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 if (self.robot_orientation) != (expected_angle//90):
                     # print("Rotating Robot")
@@ -261,3 +273,8 @@ class Maze:
 
     def produce_video():
         pass
+
+class CustomError(Exception):
+    def __init__(self, message="An error occurred"):
+        self.message = message
+        super().__init__(self.message)

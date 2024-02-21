@@ -3,7 +3,7 @@ import tensorflow as tf
 from collections import deque
 import random
 from class_maze import Maze
-from tensorflow.python.keras import layers, models, optimizers, metrics, losses
+from tensorflow.python.keras import layers, initializers, models, optimizers, metrics, losses
 
 class DQN:
     def __init__(self, state_size):
@@ -36,7 +36,7 @@ class DQN:
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
         # From Google article pseudocode line 2: Initialize action-value function Q with random weights
         model = models.Sequential()
-        init = layers.initializers.VarianceScaling(scale=2.0)
+        init = initializers.VarianceScaling(scale=2.0)
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
         model.add(layers.Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=init, input_shape=(None, self.state_size[0], self.state_size[1], self.agent_history_length)))
         model.add(layers.Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=init))
@@ -49,13 +49,13 @@ class DQN:
         return model
 
     def get_action(self, state, available_actions, expl_rate):
-        # Eventually, won't be constant 4 actions. Will filter out.
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
             return random.choice(available_actions)
             # return random.randrange(self.action_size)
         else:
             max_val_idx =  np.argmax(self.model.predict(state)[0])
             # TODO: Fix this portion of code, because max_val_idx may be a number larger than the available_actions given.
+            # Maybe try doing self.model.predict, then seeing the list of values that come out and sort it that way
             return available_actions[max_val_idx]
         
     def remember(self, state, action, reward, next_state, game_over):
@@ -158,9 +158,10 @@ class DQN:
             self.cur_stacked_images.clear()
             time_step = 0
             # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We don't have image preprocessing implemented just yet.
-            init_state = maze.reset_maze(time_step)
+            init_state = maze.reset(time_step)
             self.cur_stacked_images.append(init_state)
-            state = np.expand_dims(np.array(self.cur_stacked_images), axis=0)  # Adding batch dimension
+            # state = np.expand_dims(np.array(self.cur_stacked_images), axis=0)  # Adding batch dimension
+            state = tf.expand_dims(self.cur_stacked_images, axis=0)  # Adding batch dimension
             # episode_step = 0
             episode_score = 0.0
             while not game_over:
