@@ -234,6 +234,7 @@ class Maze:
         return valid_actions
 
     def get_reward(self):
+        # TODO: Look into penalty reward for traversed locations and advancing to new spot (maybe swap or alter)
         # NOTE: Do I account for maze edges or walls here?
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # Robot reached the goal
@@ -248,6 +249,7 @@ class Maze:
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
+        # TODO: Get rid of this, account for maximum time steps allowed in class DQN
         # If rewards value is less than the minimum rewards allowed
         if self.total_reward < self.min_reward:
             return True

@@ -29,7 +29,8 @@ def build_model():
         # From Google article pseudocode line 2: Initialize action-value function Q with random weights
         init = initializers.VarianceScaling(scale=2.0)
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
-        input_layer = Input(shape = (389, 398, 4))
+        input_layer = Input(shape = (389, 398, 4), batch_size=32)
+        # input_layer = Input(shape = (389, 398, 4))
         normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=init)(normalized_input)
         conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=init)(conv1)
@@ -53,27 +54,3 @@ if __name__ == "__main__":
         marker_filepath = "images/marker8.jpg"
         maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
         model = build_model()
-        # Start of testing image preprocessing
-        cur_stacked_images = deque(maxlen=4)
-        init_state = maze.reset(0)
-        blue_channel, green_channel, red_channel = cv.split(init_state)
-        init_state = blue_channel
-        # print(blue_channel)
-        # print(blue_channel.shape)
-        cur_stacked_images.append(init_state)
-        print(tf.constant((cur_stacked_images), dtype = tf.float32))
-
-        # cur_stacked_images.append(init_state)
-        # print(tf.constant((cur_stacked_images), dtype = tf.float32))
-
-        # Method of grabbing one channel only: indexing to one channel
-        # test = tf.constant((cur_stacked_images), dtype = tf.float32)
-        # print(test.shape)
-        # tester = test[:,:,:,2]
-        # print(tester)
-        # print(tester.shape)
-
-        # cur_stacked_images.append(init_state)
-        # print(tf.constant((cur_stacked_images), dtype = tf.float32))
-        # state = tf.expand_dims(cur_stacked_images, axis=0)  # Adding batch dimension
-        # print(state)

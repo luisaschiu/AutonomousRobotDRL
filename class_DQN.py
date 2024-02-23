@@ -7,7 +7,7 @@ from tensorflow.python.keras import layers, initializers, models, optimizers, me
 
 class DQN:
     def __init__(self, state_size):
-        # NOTE: Is state_size a (m,n) for a mxn maze or the image size?
+        # State size is the image size
         self.state_size = state_size
         self.action_size = 4
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
@@ -124,6 +124,7 @@ class DQN:
 
         return loss
 
+    # Generate batches of random memories pulled from self.replay_memory
     def generate_minibatch_samples(self):
         # Generate list of random indices
         indices_lst = []
@@ -141,7 +142,6 @@ class DQN:
                         continue
                 indices_lst.append(index)
                 break
-        # Generate batches of random memories pulled from self.replay_memory
         state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = [], [], [], [], []
         for index in indices_lst:
             (state, action, reward, next_state, game_over) = self.replay_memory[index]
