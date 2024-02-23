@@ -4,6 +4,7 @@ from collections import deque
 import random
 from class_maze import Maze
 from tensorflow.python.keras import layers, initializers, models, optimizers, metrics, losses
+import cv2 as cv
 
 class DQN:
     def __init__(self, state_size):
@@ -152,6 +153,25 @@ class DQN:
             game_over_batch.append(tf.constant(game_over, tf.bool))
         return tf.stack(state_batch, axis=0), tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), tf.stack(next_state_batch, axis=0), tf.stack(game_over_batch, axis=0)
 
+    def preprocess_image(self, time_step, new_image):
+        # Get rid of the 3 color channels, convert to grayscale
+        new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
+        # If it is the start of the game (time_step = 0), append the start configuration 4 times as initial input to the neural network model.
+        if time_step == 0:
+            self.cur_stacked_images.append(new_image)
+            self.cur_stacked_images.append(new_image)
+            self.cur_stacked_images.append(new_image)
+            self.cur_stacked_images.append(new_image)
+            tensor = tf.constant(self.cur_stacked_images, tf.float32) # Convert to tensor type, make sure all values are of datatype float32
+            tensor_transposed = tf.transpose(tensor, [1, 2, 0]) # Change tensor to desired shape (img_height, img_width, self.agent_history_length)
+            tensor_batch = tf.expand_dims(tensor_transposed, axis=0)  # Adding batch dimension
+        else:
+            self.cur_stacked_images.append(new_image)
+            tensor = tf.constant(self.cur_stacked_images, tf.float32) # Convert to tensor type, make sure all values are of datatype float32
+            tensor_transposed = tf.transpose(tensor, [1, 2, 0]) # Change tensor to desired shape (img_height, img_width, self.agent_history_length)
+            tensor_batch = tf.expand_dims(tensor_transposed, axis=0)  # Adding batch dimension
+        return tensor_batch
+
     def train_agent(self, maze: Maze, num_episodes = 1e7):
         game_over = False
         for episode in range(num_episodes):
@@ -159,9 +179,7 @@ class DQN:
             time_step = 0
             # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We don't have image preprocessing implemented just yet.
             init_state = maze.reset(time_step)
-            self.cur_stacked_images.append(init_state)
-            # state = np.expand_dims(np.array(self.cur_stacked_images), axis=0)  # Adding batch dimension
-            state = tf.expand_dims(self.cur_stacked_images, axis=0)  # Adding batch dimension
+            state = self.preprocess_image(time_step, init_state)
             # episode_step = 0
             episode_score = 0.0
             while not game_over:
@@ -174,11 +192,11 @@ class DQN:
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
                 (next_state_img, reward, game_over) = maze.take_action(action, time_step)
                 episode_score += reward
-                next_state = self.cur_stacked_images.append(next_state_img)
+                next_state = self.preprocess_image(time_step, next_state_img)
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
                 # next_state = (state, action, next_state_img)
                 # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
-                self.remember(state, action, reward, self.cur_stacked_images, game_over)
+                self.remember(state, action, reward, next_state, game_over)
                 state = next_state
                 # From Google article pseudocode line 9: Sample random minibatch of transitions/experiences from D
                 if (time_step % self.agent_history_length == 0) and (time_step > self.replay_start_size):

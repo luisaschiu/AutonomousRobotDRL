@@ -32,11 +32,10 @@ class Maze:
         ax.set_yticks(np.arange(0.5, ncols, 1))
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
-        ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
+        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
         # Overlay marker onto the robot location
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
-        # file = "images/marker8.jpg"
         marker = self.marker
         marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
         imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
@@ -62,8 +61,8 @@ class Maze:
         ax.set_yticks(np.arange(0.5, ncols, 1))
         ax.set_xticks([])
         ax.set_yticks([])
-        ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
-        ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
+        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
         # Overlay marker onto the robot location
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
