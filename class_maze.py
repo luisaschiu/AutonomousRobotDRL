@@ -18,6 +18,7 @@ class Maze:
         self.marker = mpimg.imread(marker_filepath)
         self.start_pt = start_pt
         self.goal_pt = goal_pt
+        # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
         self.min_reward = -0.5*maze.size
         self.total_reward = 0
@@ -94,8 +95,6 @@ class Maze:
     def reset(self, time_step):
         self.maze = self.init_maze
         self.robot_location = self.start_pt
-        # print("Robot_orientation: ", self.robot_orientation)
-        # print("Start_orientation: ", self.start_orientation)
         self.robot_orientation = self.start_orientation//90
         # self.traversed = np.array([])
         # Reset previously traversed locations for the next episode
@@ -107,7 +106,6 @@ class Maze:
 
     def move_robot(self, direction:str):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
-        # TODO: TAKE INTO ACCOUNT IF IT HITS A MAZE EDGE?
         # TODO: Consider if I still need to append to a traversed location in line above, if robot does not move from invalid move.
         if direction == "UP":
             test_location = (robot_x, robot_y-1)
