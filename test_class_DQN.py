@@ -3,8 +3,8 @@ import tensorflow as tf
 from collections import deque
 import random
 from class_maze import Maze
-from tensorflow.python.keras import layers, initializers, models, optimizers, metrics, losses
-from tensorflow.python.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
+from tensorflow.keras import initializers, models, optimizers, metrics
+from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 from PIL import Image
 import cv2 as cv
 
@@ -47,19 +47,18 @@ class DQN:
     def build_model(self):
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
         # From Google article pseudocode line 2: Initialize action-value function Q with random weights
-        init = initializers.VarianceScaling(scale=2.0)
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
         input_layer = Input(shape = (self.state_size[0], self.state_size[1], 4), batch_size=self.minibatch_size)
         # input_layer = Input(shape = (389, 398, 4))
         normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
-        conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=init)(normalized_input)
-        conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=init)(conv1)
-        conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=init)(conv2)
+        conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
+        conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv1)
+        conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv2)
         flatten = Flatten()(conv3)
         # Fully connected layer with 512 units, ReLU activation
-        dense1 = Dense(512, activation='relu', kernel_initializer=init)(flatten)
+        dense1 = Dense(512, activation='relu', kernel_initializer=initializers.VarianceScaling(scale=2.0))(flatten)
         # Output layer
-        output_layer = Dense(4, activation='linear', kernel_initializer=init)(dense1)
+        output_layer = Dense(4, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=2.0))(dense1)
         model = models.Model(inputs=input_layer, outputs=output_layer)
         return model
 
@@ -97,7 +96,13 @@ if __name__ == "__main__":
     time_step = 0
     init_state = maze.reset(time_step)
     state = network.preprocess_image(time_step, init_state)
-    # model.
+    tester =  model.predict(state)
+    print(tester)
+    max_val = np.argmax(tester)
+    print(max_val)
+    # max_val_idx =  np.argmax(model.predict(state))
+    # print(max_val_idx)
+
 
     # An idea to vary batchsize:
     # # Define a placeholder for the batch size 

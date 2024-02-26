@@ -3,7 +3,7 @@ import tensorflow as tf
 from collections import deque
 import random
 from class_maze import Maze
-from tensorflow.python.keras import layers, initializers, models, optimizers, metrics, losses
+from tensorflow.keras import layers, initializers, models, optimizers, metrics, losses
 import cv2 as cv
 
 class DQN:
@@ -23,9 +23,9 @@ class DQN:
         self.minibatch_size = 32
         self.max_timesteps = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
-        self.model = self._build_model()
+        self.model = self.build_model()
         
-        self.target_model = self._build_model()
+        self.target_model = self.build_model()
         self.update_target_network_freq = 1000
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
@@ -54,7 +54,7 @@ class DQN:
             return random.choice(available_actions)
             # return random.randrange(self.action_size)
         else:
-            max_val_idx =  np.argmax(self.model.predict(state)[0])
+            max_val_idx =  np.argmax(self.model.predict(state))
             # TODO: Fix this portion of code, because max_val_idx may be a number larger than the available_actions given.
             # Maybe try doing self.model.predict, then seeing the list of values that come out and sort it that way
             return available_actions[max_val_idx]
@@ -78,7 +78,7 @@ class DQN:
             eps (float): Calculated epsilon for ε-greedy at current_step.
         """
         terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
-
+        # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
         if current_step < self.replay_start_size:
             eps = self.init_exploration_rate
         elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
