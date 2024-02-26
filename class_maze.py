@@ -177,6 +177,7 @@ class Maze:
                 self.robot_location = (robot_x+1, robot_y)
                 
     def get_available_actions(self):
+        # TODO: Consider changing to returning None for invalid actions
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         valid_actions = []
         invalid_actions = [] #NOTE: For testing purposes, could just check for conditions rather than do the if/elif/else statements

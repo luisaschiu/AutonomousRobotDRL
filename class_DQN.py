@@ -52,12 +52,12 @@ class DQN:
     def get_action(self, state, available_actions, expl_rate):
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
             return random.choice(available_actions)
-            # return random.randrange(self.action_size)
         else:
             max_val_idx =  np.argmax(self.model.predict(state))
+            action_idx = max_val_idx%self.action_size
             # TODO: Fix this portion of code, because max_val_idx may be a number larger than the available_actions given.
             # Maybe try doing self.model.predict, then seeing the list of values that come out and sort it that way
-            return available_actions[max_val_idx]
+            return available_actions[action_idx]
         
     def remember(self, state, action, reward, next_state, game_over):
         self.replay_memory.append((state, action, reward, next_state, game_over))

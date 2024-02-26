@@ -82,27 +82,46 @@ class DQN:
         return tensor_batch
 
 if __name__ == "__main__":
-    # Initial parameters: create maze
-    maze_array = np.array(
-    [[0.0, 1.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0],
-    [1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 0.0]])
+    # # Initial parameters: create maze
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # marker_filepath = "images/marker8.jpg"
+    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # network = DQN((389, 389))
+    # model = network.build_model()
+    # time_step = 0
+    # init_state = maze.reset(time_step)
+    # state = network.preprocess_image(time_step, init_state)
+    # tester =  model.predict(state)
+    # print(tester)
+    # max_val = np.argmax(tester)
+    # print(max_val)
+    # # max_val_idx =  np.argmax(model.predict(state))
+    # # print(max_val_idx)
 
-    marker_filepath = "images/marker8.jpg"
-    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    network = DQN((389, 389))
-    model = network.build_model()
-    time_step = 0
-    init_state = maze.reset(time_step)
-    state = network.preprocess_image(time_step, init_state)
-    tester =  model.predict(state)
-    print(tester)
-    max_val = np.argmax(tester)
-    print(max_val)
-    # max_val_idx =  np.argmax(model.predict(state))
-    # print(max_val_idx)
 
+    # Testing np.argmax:
+    arr = np.array([[20, -30, 30, 4],
+                    [3, 5, 60, 2],
+                    [3000, -3300, 3, -3]])
+    # Find index of maximum value
+    max_index = np.argmax(arr)
+
+    # Copy array and set the maximum value to a very low number
+    arr_copy = arr.copy()
+    arr_copy.flat[max_index] = np.iinfo(np.int32).min  # Set original max value to a very low integer
+
+    # Find index of next highest value
+    next_highest_index_flat = np.argmax(arr_copy)
+
+    # Convert flat index to index in the original array
+    next_highest_index = np.unravel_index(next_highest_index_flat, arr.shape)
+
+    print("Index of maximum value:", np.unravel_index(max_index, arr.shape))
+    print("Index of next highest value:", next_highest_index)
 
     # An idea to vary batchsize:
     # # Define a placeholder for the batch size 
