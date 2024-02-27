@@ -3,7 +3,8 @@ import tensorflow as tf
 from collections import deque
 import random
 from class_maze import Maze
-from tensorflow.keras import layers, initializers, models, optimizers, metrics, losses
+from tensorflow.keras import initializers, models, optimizers, metrics, losses
+from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 import cv2 as cv
 
 class DQN:
@@ -33,31 +34,47 @@ class DQN:
         # NOTE: Bottom line of code might be redundant, unless I include the feature where I load existing trained weights from a given file
         self.target_model.set_weights(self.model.get_weights())
 
+    # Method with normalizing image
     def build_model(self):
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
         # From Google article pseudocode line 2: Initialize action-value function Q with random weights
-        model = models.Sequential()
-        init = initializers.VarianceScaling(scale=2.0)
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
-        model.add(layers.Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=init, input_shape=(None, self.state_size[0], self.state_size[1], self.agent_history_length)))
-        model.add(layers.Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=init))
-        model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=init))
-        model.add(layers.Flatten())
+        input_layer = Input(shape = (self.state_size[0], self.state_size[1], 4), batch_size=self.minibatch_size)
+        # input_layer = Input(shape = (389, 398, 4))
+        normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+        conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
+        conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv1)
+        conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv2)
+        flatten = Flatten()(conv3)
         # Fully connected layer with 512 units, ReLU activation
-        model.add(layers.Dense(512, activation='relu', kernel_initializer=init))
+        dense1 = Dense(512, activation='relu', kernel_initializer=initializers.VarianceScaling(scale=2.0))(flatten)
         # Output layer
-        model.add(layers.Dense(self.action_size, activation='linear', kernel_initializer=init))
+        output_layer = Dense(4, activation='linear', kernel_initializer=initializers.VarianceScaling(scale=2.0))(dense1)
+        model = models.Model(inputs=input_layer, outputs=output_layer)
         return model
 
     def get_action(self, state, available_actions, expl_rate):
+        #  This means that every value within the range [0, 1) has an equal probability of being chosen.
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
-            return random.choice(available_actions)
+            not_none_idx = [index for index, action in enumerate(available_actions) if action is not None]
+            random_idx = random.choice(not_none_idx)
+            return available_actions[random_idx]
         else:
-            max_val_idx =  np.argmax(self.model.predict(state))
-            action_idx = max_val_idx%self.action_size
-            # TODO: Fix this portion of code, because max_val_idx may be a number larger than the available_actions given.
-            # Maybe try doing self.model.predict, then seeing the list of values that come out and sort it that way
-            return available_actions[action_idx]
+            array =self.model.predict(state)
+            # Copy array so we don't alter the original q-value array in case we want to look at it
+            array_copy = array.copy()
+            array_shape = array.shape
+            best_action_idx = None
+            while best_action_idx is None:
+                max_idx = np.argmax(array_copy)
+                col_idx = np.unravel_index(max_idx, array_shape)[1]
+                if available_actions[col_idx] is not None:
+                    best_action_idx = col_idx
+                    break
+                # If best_action is None, find the next largest q-value within the multidimensional array
+                else:
+                    array_copy.flat[max_idx] = np.iinfo(np.int32).min
+            return available_actions[best_action_idx]
         
     def remember(self, state, action, reward, next_state, game_over):
         self.replay_memory.append((state, action, reward, next_state, game_over))
@@ -81,11 +98,16 @@ class DQN:
         # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
         if current_step < self.replay_start_size:
             eps = self.init_exploration_rate
+        # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
+        # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
         elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
             eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
+        # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
         elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
             eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
         else:
+            # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
+            # there is a very low chance of exploration.
             eps = terminal_eps
         return eps
     
@@ -143,15 +165,35 @@ class DQN:
                         continue
                 indices_lst.append(index)
                 break
+        # If going through all of those for loops are too computationally intensive, try this code from chatgpt:
+        # # Extract data from self.replay_memory based on indices_lst
+        # replay_data = [self.replay_memory[index] for index in indices_lst]
+        # # Separate the data into individual lists
+        # state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = zip(*replay_data)
+        # # Convert lists to tensors
+        # action_batch = tf.stack([tf.constant(action, dtype=tf.int32) for action in action_batch])
+        # reward_batch = tf.stack([tf.constant(reward, dtype=tf.float32) for reward in reward_batch])
+        # game_over_batch = tf.stack([tf.constant(game_over, dtype=tf.bool) for game_over in game_over_batch])
+
         state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = [], [], [], [], []
         for index in indices_lst:
             (state, action, reward, next_state, game_over) = self.replay_memory[index]
             state_batch.append(tf.constant(state, tf.float32))
-            action_batch.append(tf.constant(action, tf.int32))
+            action_batch.append(tf.constant(action, tf.string))
             reward_batch.append(tf.constant(reward, tf.float32))
             next_state_batch.append(tf.constant(next_state, tf.float32))
             game_over_batch.append(tf.constant(game_over, tf.bool))
-        return tf.stack(state_batch, axis=0), tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), tf.stack(next_state_batch, axis=0), tf.stack(game_over_batch, axis=0)
+        # Organize the batch_size to have proper dimensions for state_batch and next_state_batch:
+        # Initialize with the first tensor
+        concatenated_state_tensor = state_batch[0] 
+        for i in range(1, len(next_state_batch)):
+            concatenated_state_tensor = tf.concat([concatenated_state_tensor, state_batch[i]], axis=0)
+        # Repeat for next_state_batch. Initialize with the first tensor.
+        concatenated_next_state_tensor = next_state_batch[0]
+        for i in range(1, len(next_state_batch)):
+            concatenated_next_state_tensor = tf.concat([concatenated_next_state_tensor, next_state_batch[i]], axis=0)
+        # NOTE: action_batch, reward_batch, and game_over_batch will all have a tensor flow shape of: shape=(4,). Found through testing.
+        return concatenated_state_tensor, tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), concatenated_next_state_tensor, tf.stack(game_over_batch, axis=0)
 
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale

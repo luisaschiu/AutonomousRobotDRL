@@ -5,7 +5,6 @@ import random
 from class_maze import Maze
 from tensorflow.keras import initializers, models, optimizers, metrics
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
-from PIL import Image
 import cv2 as cv
 
 class DQN:
@@ -23,6 +22,10 @@ class DQN:
         self.update_target_network_freq = 1000
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
+
+        self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
+        self.final_exploration_rate = 0.1
+        self.final_exploration_frame = 1e6
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         # NOTE: Bottom line of code might be redundant, unless I include the feature where I load existing trained weights from a given file
         self.target_model.set_weights(self.model.get_weights())
@@ -81,8 +84,64 @@ class DQN:
             tensor_batch = tf.expand_dims(tensor_transposed, axis=0)  # Adding batch dimension
         return tensor_batch
 
+    def remember(self, state, action, reward, next_state, game_over):
+        self.replay_memory.append((state, action, reward, next_state, game_over))
+
+    def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
+        """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
+
+        Args:
+            current_step (int): Number of entire steps agent experienced.
+            terminal_eps (float): Final exploration rate arrived at terminal_frame_factor * self.final_exploration_frame.
+            terminal_frame_factor (int): Final exploration frame, which is terminal_frame_factor * self.final_exploration_frame.
+
+        Returns:
+            eps (float): Calculated epsilon for ε-greedy at current_step.
+        """
+        terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
+        # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
+        if current_step < self.replay_start_size:
+            eps = self.init_exploration_rate
+        # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
+        # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
+        elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
+            eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
+        # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
+        elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
+            eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
+        else:
+            # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
+            # there is a very low chance of exploration.
+            eps = terminal_eps
+        return eps
+    
+    def get_action(self, state, available_actions, expl_rate):
+        #  This means that every value within the range [0, 1) has an equal probability of being chosen.
+        if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
+            not_none_idx = [index for index, action in enumerate(available_actions) if action is not None]
+            random_idx = random.choice(not_none_idx)
+            return available_actions[random_idx]
+        else:
+            array =self.model.predict(state)
+            # Copy array so we don't alter the original q-value array in case we want to look at it
+            array_copy = array.copy()
+            array_shape = array.shape
+            best_action_idx = None
+            while best_action_idx is None:
+                max_idx = np.argmax(array_copy)
+                col_idx = np.unravel_index(max_idx, array_shape)[1]
+                if available_actions[col_idx] is not None:
+                    best_action_idx = col_idx
+                    break
+                # If best_action is None, find the next largest q-value within the multidimensional array
+                else:
+                    array_copy.flat[max_idx] = np.iinfo(np.int32).min
+            return available_actions[best_action_idx]
+
 if __name__ == "__main__":
+    pass
     # # Initial parameters: create maze
+    # # Testing one run of the train_agent code:
     # maze_array = np.array(
     # [[0.0, 1.0, 1.0, 0.0],
     # [0.0, 0.0, 0.0, 0.0],
@@ -92,40 +151,124 @@ if __name__ == "__main__":
     # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
     # network = DQN((389, 389))
     # model = network.build_model()
-    # time_step = 0
+    # next_state_batch = []
+    # time_step = 0    
     # init_state = maze.reset(time_step)
     # state = network.preprocess_image(time_step, init_state)
+    # episode_score = 0
+
+    # # # Test inputting a batch size of 1
+    # # q_val = model.predict(state)
+    # # print(q_val)
+
+    # # Start of while loop:
+    # time_step += 1
+    # action = "DOWN"
+    # (next_state_img, reward, game_over) = maze.take_action(action, time_step)
+    # episode_score += reward
+    # next_state = network.preprocess_image(time_step, next_state_img)
+    # network.remember(state, action, reward, next_state, game_over)
+    # # print()
+    # # print("First next_state: ")
+    # # print(next_state)
+    # # print(next_state.shape)
+    # next_state_batch.append(tf.constant(next_state, tf.float32))
+    # # print(network.replay_memory)
+    # # print(len(network.replay_memory))
+    # state = next_state
+    # time_step += 1
+    # action = "RIGHT"
+    # (next_state_img, reward, game_over) = maze.take_action(action, time_step)
+    # episode_score += reward
+    # next_state = network.preprocess_image(time_step, next_state_img)
+    # network.remember(state, action, reward, next_state, game_over)
+    # # print()
+    # # print("Second next_state: ")
+    # # print(next_state)
+    # # print(next_state.shape)
+    # next_state_batch.append(tf.constant(next_state, tf.float32))
+    # concatenated_tensor = next_state_batch[0]  # Initialize with the first tensor
+    # for i in range(1, len(next_state_batch)):
+    #     concatenated_tensor = tf.concat([concatenated_tensor, next_state_batch[i]], axis=0)
+
+    # # Print the concatenated tensor
+    # print("Concatenated tensor along batch size dimension:")
+    # print(concatenated_tensor)
+
+    # # Test inputting a batch size of larger than 1
+    # tester =  model.predict(concatenated_tensor)
+    # print(tester)
+
+
+
+
+
     # tester =  model.predict(state)
+
     # print(tester)
     # max_val = np.argmax(tester)
     # print(max_val)
-    # # max_val_idx =  np.argmax(model.predict(state))
-    # # print(max_val_idx)
+    # max_val_idx =  np.argmax(model.predict(state))
+    # print(max_val_idx)
 
 
-    # Testing np.argmax:
-    arr = np.array([[20, -30, 30, 4],
-                    [3, 5, 60, 2],
-                    [3000, -3300, 3, -3]])
-    # Find index of maximum value
-    max_index = np.argmax(arr)
+    # # Test output shape of batches that are not state or next_state
+    # game_over_batch = []
+    # game_over_batch.append(tf.constant(True, tf.bool))
+    # game_over_batch.append(tf.constant(True, tf.bool))
+    # game_over_batch.append(tf.constant(False, tf.bool))
+    # game_over_batch.append(tf.constant(True, tf.bool))
+    # game_over_tensor = tf.stack(game_over_batch, axis=0)
+    # print(game_over_tensor)
 
-    # Copy array and set the maximum value to a very low number
-    arr_copy = arr.copy()
-    arr_copy.flat[max_index] = np.iinfo(np.int32).min  # Set original max value to a very low integer
 
-    # Find index of next highest value
-    next_highest_index_flat = np.argmax(arr_copy)
+    # # Test finding highest max_val in a multi-dimensional array and choosing next best action(max q value) if the "best_action" is unavailable.
+    # available_actions = [None, "DOWN", None, "RIGHT"]
+    # arr = np.array([[20, 3, 0, 4],
+    #                 [3, -5, 60, 2],
+    #                 [3000, -3300, 3, -3]])
+    # # Copy array
+    # array_copy = arr.copy()
+    # array_shape = arr.shape
+    # valid_idx = None
+    # while valid_idx is None:
+    #     max_idx = np.argmax(array_copy)
+    #     col_idx = np.unravel_index(max_idx, array_shape)[1]
+    #     if available_actions[col_idx] is not None:
+    #         valid_idx = col_idx
+    #         break
+    #     else:
+    #         array_copy.flat[max_idx] = np.iinfo(np.int32).min  # Set original max value to a very low integer
+    # print(available_actions[col_idx])
 
-    # Convert flat index to index in the original array
-    next_highest_index = np.unravel_index(next_highest_index_flat, arr.shape)
 
-    print("Index of maximum value:", np.unravel_index(max_index, arr.shape))
-    print("Index of next highest value:", next_highest_index)
+    # # Find index of max value and find next highest:
+    # max_index = np.argmax(arr)
+    # # Copy array and set the maximum value to a very low number
+    # arr_copy = arr.copy()
+    # arr_copy.flat[max_index] = np.iinfo(np.int32).min  # Set original max value to a very low integer
+    # # Find index of next highest value
+    # next_highest_index_flat = np.argmax(arr_copy)
+    # # Convert flat index to index in the original array
+    # next_highest_index = np.unravel_index(next_highest_index_flat, arr.shape)
+    # # print("Max index value:", max_index)
+    # print("Index of maximum value:", np.unravel_index(max_index, arr.shape))
+    # # print("Next max index value:", next_highest_index_flat)
+    # print("Index of next highest value:", next_highest_index)
+
+
+
+    # Test exploring and choosing a random action in available_actions list:
+    # available_actions = [None, "DOWN", None, "RIGHT"]
+    # not_none_idx = [index for index, action in enumerate(available_actions) if action is not None]
+    # For exploring:
+    # print(not_none_idx)
+    # random_idx = random.choice(not_none_idx)
+    # print(available_actions[random_idx])
+
 
     # An idea to vary batchsize:
     # # Define a placeholder for the batch size 
     # batch_size = None
-
     # # Create a placeholder tensor with shape (batch_size, height, width, channels)
     # input_tensor = tf.placeholder(tf.float32, shape=(batch_size, 84, 84, 4))
