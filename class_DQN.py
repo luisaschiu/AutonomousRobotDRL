@@ -165,7 +165,6 @@ class DQN:
             # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
                 index = np.random.randint(low=self.agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
             # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
-
             sliced_deque = deque(itertools.islice(self.replay_memory, (index-self.agent_history_length), (index)))
             terminal_flag = False
             for item in sliced_deque:
