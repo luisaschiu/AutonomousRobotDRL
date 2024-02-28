@@ -157,20 +157,14 @@ if __name__ == "__main__":
     # state = network.preprocess_image(time_step, init_state)
     # episode_score = 0
 
+
     # Test logic for finding valid_indices of minibatches
     # Initial parameters, changed to scale down and test/debug
     replay_memory_capacity = 12
     replay_memory = deque(maxlen=replay_memory_capacity)
     minibatch_size = 10
     agent_history_length = 4
-    
     # Create random batches for testing:
-    rand_state_array = np.array([[1, 2, 3],
-                           [4, 5, 6],
-                           [7, 8, 9]])
-    rand_next_state_array = np.array([[10, 20, 30],
-                           [40, 50, 60],
-                           [70, 80, 90]])
     mem0 = ("state0", "action0", "reward0", "next_state0", False)
     mem1 = ("state1", "action1", "reward1", "next_state1", False)
     mem2 = ("state2", "action2", "reward2", "next_state2", False)
@@ -196,11 +190,13 @@ if __name__ == "__main__":
     replay_memory.append(mem9)
     replay_memory.append(mem10)
     replay_memory.append(mem11)
-    replay_memory.append(mem12)
-
+    # replay_memory.append(mem12)
     print(replay_memory)
-    sliced_deque = deque(itertools.islice(replay_memory, 0, 4))
-    print("sliced: ", sliced_deque)
+
+    # # Test slicing the deque to get the desired data within that interval
+    # sliced_deque = deque(itertools.islice(replay_memory, 0, 4))
+    # print("sliced: ", sliced_deque)
+
     # Start of logic
     indices_lst = []
     cur_memory_size = len(replay_memory)
@@ -213,13 +209,11 @@ if __name__ == "__main__":
         else:
         # If replay memory isn't full yet, sample from existing replay memory
         # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-            index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
+            index = np.random.randint(low=(agent_history_length), high=(cur_memory_size+1), dtype=np.int32)
         # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
         print("index: ", index)
         sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
-                    #NOTE: Is it the ending number + 1 or is it the beginning number? index+1 might error out if we consider 12?
         terminal_flag = False
-        counter = 0
         for item in sliced_deque:
             if item[4] == True:
                 terminal_flag = True
@@ -227,10 +221,17 @@ if __name__ == "__main__":
                 break
             print(item[0], "works")
         if terminal_flag == False:
-            indices_lst.append(index)
+            indices_lst.append((index-1))
     print(indices_lst)
+    state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = [], [], [], [], []
+    for index in indices_lst:
+        (state, action, reward, next_state, game_over) = replay_memory[index]
+        state_batch.append(state)
+        game_over_batch.append(game_over)
+    print(state_batch)
+    print(game_over_batch)
 
-    # # Test inputting a batch size of 1
+    # # Test inputting varying batch sizes in NN model
     # maze_array = np.array(
     # [[0.0, 1.0, 1.0, 0.0],
     # [0.0, 0.0, 0.0, 0.0],
@@ -245,6 +246,8 @@ if __name__ == "__main__":
     # init_state = maze.reset(time_step)
     # state = network.preprocess_image(time_step, init_state)
     # episode_score = 0
+
+    # # Test inputting a batch size of 1
     # # q_val = model.predict(state)
     # # print(q_val)
 
@@ -277,7 +280,6 @@ if __name__ == "__main__":
     # concatenated_tensor = next_state_batch[0]  # Initialize with the first tensor
     # for i in range(1, len(next_state_batch)):
     #     concatenated_tensor = tf.concat([concatenated_tensor, next_state_batch[i]], axis=0)
-
     # # Print the concatenated tensor
     # print("Concatenated tensor along batch size dimension:")
     # print(concatenated_tensor)
@@ -285,18 +287,7 @@ if __name__ == "__main__":
     # # Test inputting a batch size of larger than 1
     # tester =  model.predict(concatenated_tensor)
     # print(tester)
-
-
-
-
-
     # tester =  model.predict(state)
-
-    # print(tester)
-    # max_val = np.argmax(tester)
-    # print(max_val)
-    # max_val_idx =  np.argmax(model.predict(state))
-    # print(max_val_idx)
 
 
     # # Test output shape of batches that are not state or next_state

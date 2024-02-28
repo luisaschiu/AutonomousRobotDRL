@@ -6,6 +6,7 @@ from class_maze import Maze
 from tensorflow.keras import initializers, models, optimizers, metrics, losses
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 import cv2 as cv
+import itertools
 
 class DQN:
     def __init__(self, state_size):
@@ -155,18 +156,26 @@ class DQN:
         indices_lst = []
         cur_memory_size = len(self.replay_memory)
         while len(indices_lst) < self.minibatch_size:
-            while True:
-                # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
-                if cur_memory_size == self.replay_memory_capacity:
-                    index = np.random.randint(low=self.agent_history_length, high=self.replay_memory_capacity, dtype=np.int32)
-                else:
-                # If replay memory isn't full yet, sample from existing replay memory
-                    index = np.random.randint(low=self.agent_history_length, high=cur_memory_size, dtype=np.int32)
-                # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
-                if np.any([(sample[4] == True) for sample in self.replay_memory[index - self.agent_history_length:index]]):
-                    continue
-                indices_lst.append(index)
-                break
+            # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
+            if cur_memory_size == self.replay_memory_capacity:
+                # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+                index = np.random.randint(low=(self.agent_history_length), high=(self.replay_memory_capacity+1), dtype=np.int32)
+            else:
+            # If replay memory isn't full yet, sample from existing replay memory
+            # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+                index = np.random.randint(low=self.agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
+            # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
+
+            sliced_deque = deque(itertools.islice(self.replay_memory, (index-self.agent_history_length), (index)))
+            terminal_flag = False
+            for item in sliced_deque:
+                if item[4] == True:
+                    terminal_flag = True
+                    break
+            if terminal_flag == False:
+                # NOTE: Since slicing the deque doesn't consider the last index, I have to offset the index by 1.
+                # Slice notation [start:stop] extracts elements from the index start up to, but not including, the index stop.
+                indices_lst.append(index-1)
         # If going through all of those for loops are too computationally intensive, try this code from chatgpt:
         # # Extract data from self.replay_memory based on indices_lst
         # replay_data = [self.replay_memory[index] for index in indices_lst]
