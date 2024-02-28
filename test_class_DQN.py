@@ -6,6 +6,7 @@ from class_maze import Maze
 from tensorflow.keras import initializers, models, optimizers, metrics
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 import cv2 as cv
+import itertools
 
 class DQN:
     def __init__(self, state_size):
@@ -139,7 +140,6 @@ class DQN:
             return available_actions[best_action_idx]
 
 if __name__ == "__main__":
-    pass
     # # Initial parameters: create maze
     # # Testing one run of the train_agent code:
     # maze_array = np.array(
@@ -157,11 +157,100 @@ if __name__ == "__main__":
     # state = network.preprocess_image(time_step, init_state)
     # episode_score = 0
 
-    # # # Test inputting a batch size of 1
+    # Test logic for finding valid_indices of minibatches
+    # Initial parameters, changed to scale down and test/debug
+    replay_memory_capacity = 12
+    replay_memory = deque(maxlen=replay_memory_capacity)
+    minibatch_size = 10
+    agent_history_length = 4
+    
+    # Create random batches for testing:
+    rand_state_array = np.array([[1, 2, 3],
+                           [4, 5, 6],
+                           [7, 8, 9]])
+    rand_next_state_array = np.array([[10, 20, 30],
+                           [40, 50, 60],
+                           [70, 80, 90]])
+    mem0 = ("state0", "action0", "reward0", "next_state0", False)
+    mem1 = ("state1", "action1", "reward1", "next_state1", False)
+    mem2 = ("state2", "action2", "reward2", "next_state2", False)
+    mem3 = ("state3", "action3", "reward3", "next_state3", False)
+    mem4 = ("state4", "action4", "reward4", "next_state4", False)
+    mem5 = ("state5", "action5", "reward5", "next_state5", True)
+    mem6 = ("state6", "action6", "reward6", "next_state6", False)
+    mem7 = ("state7", "action7", "reward7", "next_state7", False)
+    mem8 = ("state8", "action8", "reward8", "next_state8", False)
+    mem9 = ("state9", "action9", "reward9", "next_state9", False)
+    mem10 = ("state10", "action10", "reward10", "next_state10", False)
+    mem11 = ("state11", "action11", "reward11", "next_state11", False)
+    mem12 = ("state12", "action12", "reward12", "next_state12", False)
+    replay_memory.append(mem0)
+    replay_memory.append(mem1)
+    replay_memory.append(mem2)
+    replay_memory.append(mem3)
+    replay_memory.append(mem4)
+    replay_memory.append(mem5)
+    replay_memory.append(mem6)
+    replay_memory.append(mem7)
+    replay_memory.append(mem8)
+    replay_memory.append(mem9)
+    replay_memory.append(mem10)
+    replay_memory.append(mem11)
+    replay_memory.append(mem12)
+
+    print(replay_memory)
+    sliced_deque = deque(itertools.islice(replay_memory, 0, 4))
+    print("sliced: ", sliced_deque)
+    # Start of logic
+    indices_lst = []
+    cur_memory_size = len(replay_memory)
+    while len(indices_lst) < minibatch_size:
+        while True:
+            # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
+            if cur_memory_size == replay_memory_capacity:
+                # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+                # NOTE: We index by 0, so should I lower the low value by 1?
+                index = np.random.randint(low=(agent_history_length), high=(replay_memory_capacity+1), dtype=np.int32)
+            else:
+            # If replay memory isn't full yet, sample from existing replay memory
+            # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+                index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
+            # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
+            print("index: ", index)
+            sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
+                        #NOTE: Is it the ending number + 1 or is it the beginning number? index+1 might error out if we consider 12?
+            terminal_flag = False
+            counter = 0
+            for item in sliced_deque:
+                if item[4] == True:
+                    terminal_flag = True
+                    print(item[0], " won't work")
+                    break
+                print(item[0], "works")
+            if terminal_flag == False:
+                indices_lst.append(index)
+            break
+    print(indices_lst)
+
+    # # Test inputting a batch size of 1
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # marker_filepath = "images/marker8.jpg"
+    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # network = DQN((389, 389))
+    # model = network.build_model()
+    # next_state_batch = []
+    # time_step = 0    
+    # init_state = maze.reset(time_step)
+    # state = network.preprocess_image(time_step, init_state)
+    # episode_score = 0
     # # q_val = model.predict(state)
     # # print(q_val)
 
-    # # Start of while loop:
+    # # Start of while loop in train_agent:
     # time_step += 1
     # action = "DOWN"
     # (next_state_img, reward, game_over) = maze.take_action(action, time_step)

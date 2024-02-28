@@ -55,6 +55,8 @@ class DQN:
 
     def get_action(self, state, available_actions, expl_rate):
         #  This means that every value within the range [0, 1) has an equal probability of being chosen.
+        # NOTE: I don't know if the original person who created this intended to leave out a maxval of 1.
+        # The numbers are chosen between [0,1)
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
             not_none_idx = [index for index, action in enumerate(available_actions) if action is not None]
             random_idx = random.choice(not_none_idx)
@@ -127,7 +129,7 @@ class DQN:
         """
 
         with tf.GradientTape() as tape:
-            next_state_q = self.target_model(next_state_batch)
+            next_state_q = self.target_model.predict(next_state_batch)
             next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
@@ -155,14 +157,14 @@ class DQN:
         while len(indices_lst) < self.minibatch_size:
             while True:
                 # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
-                if self.agent_history_length == self.replay_memory_capacity:
+                if cur_memory_size == self.replay_memory_capacity:
                     index = np.random.randint(low=self.agent_history_length, high=self.replay_memory_capacity, dtype=np.int32)
                 else:
                 # If replay memory isn't full yet, sample from existing replay memory
                     index = np.random.randint(low=self.agent_history_length, high=cur_memory_size, dtype=np.int32)
                 # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
-                    if np.any([(sample[4] == True) for sample in self.replay_memory[index - self.agent_history_length:index]]):
-                        continue
+                if np.any([(sample[4] == True) for sample in self.replay_memory[index - self.agent_history_length:index]]):
+                    continue
                 indices_lst.append(index)
                 break
         # If going through all of those for loops are too computationally intensive, try this code from chatgpt:
