@@ -139,6 +139,9 @@ class DQN:
                     array_copy.flat[max_idx] = np.iinfo(np.int32).min
             return available_actions[best_action_idx]
 
+    def update_target_model(self):
+        self.target_model.set_weights(self.model.get_weights())
+
 if __name__ == "__main__":
     # # Initial parameters: create maze
     # # Testing one run of the train_agent code:

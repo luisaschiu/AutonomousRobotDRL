@@ -158,11 +158,11 @@ class DQN:
         while len(indices_lst) < self.minibatch_size:
             # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
             if cur_memory_size == self.replay_memory_capacity:
-                # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+                # The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
                 index = np.random.randint(low=self.agent_history_length, high=(self.replay_memory_capacity+1), dtype=np.int32)
             else:
             # If replay memory isn't full yet, sample from existing replay memory
-            # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+            # The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
                 index = np.random.randint(low=self.agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
             # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
             sliced_deque = deque(itertools.islice(self.replay_memory, (index-self.agent_history_length), (index)))
@@ -172,7 +172,7 @@ class DQN:
                     terminal_flag = True
                     break
             if terminal_flag == False:
-                # NOTE: Since slicing the deque doesn't consider the last index, I have to offset the index by 1.
+                # Since slicing the deque doesn't consider the last index, I have to offset the index by 1.
                 # Slice notation [start:stop] extracts elements from the index start up to, but not including, the index stop.
                 indices_lst.append(index-1)
         # If going through all of those for loops are too computationally intensive, try this code from chatgpt:
@@ -229,7 +229,7 @@ class DQN:
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             time_step = 0
-            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We don't have image preprocessing implemented just yet.
+            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
             init_state = maze.reset(time_step)
             state = self.preprocess_image(time_step, init_state)
             # episode_step = 0
@@ -244,9 +244,8 @@ class DQN:
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
                 (next_state_img, reward, game_over) = maze.take_action(action, time_step)
                 episode_score += reward
-                next_state = self.preprocess_image(time_step, next_state_img)
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
-                # next_state = (state, action, next_state_img)
+                next_state = self.preprocess_image(time_step, next_state_img)
                 # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
                 self.remember(state, action, reward, next_state, game_over)
                 state = next_state
