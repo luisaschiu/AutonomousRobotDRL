@@ -205,31 +205,29 @@ if __name__ == "__main__":
     indices_lst = []
     cur_memory_size = len(replay_memory)
     while len(indices_lst) < minibatch_size:
-        while True:
-            # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
-            if cur_memory_size == replay_memory_capacity:
-                # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-                # NOTE: We index by 0, so should I lower the low value by 1?
-                index = np.random.randint(low=(agent_history_length), high=(replay_memory_capacity+1), dtype=np.int32)
-            else:
-            # If replay memory isn't full yet, sample from existing replay memory
+        # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
+        if cur_memory_size == replay_memory_capacity:
             # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-                index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
-            # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
-            print("index: ", index)
-            sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
-                        #NOTE: Is it the ending number + 1 or is it the beginning number? index+1 might error out if we consider 12?
-            terminal_flag = False
-            counter = 0
-            for item in sliced_deque:
-                if item[4] == True:
-                    terminal_flag = True
-                    print(item[0], " won't work")
-                    break
-                print(item[0], "works")
-            if terminal_flag == False:
-                indices_lst.append(index)
-            break
+            # NOTE: We index by 0, so should I lower the low value by 1?
+            index = np.random.randint(low=(agent_history_length), high=(replay_memory_capacity+1), dtype=np.int32)
+        else:
+        # If replay memory isn't full yet, sample from existing replay memory
+        # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+            index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
+        # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
+        print("index: ", index)
+        sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
+                    #NOTE: Is it the ending number + 1 or is it the beginning number? index+1 might error out if we consider 12?
+        terminal_flag = False
+        counter = 0
+        for item in sliced_deque:
+            if item[4] == True:
+                terminal_flag = True
+                print(item[0], " won't work")
+                break
+            print(item[0], "works")
+        if terminal_flag == False:
+            indices_lst.append(index)
     print(indices_lst)
 
     # # Test inputting a batch size of 1
