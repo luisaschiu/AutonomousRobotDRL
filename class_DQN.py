@@ -159,7 +159,7 @@ class DQN:
             # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
             if cur_memory_size == self.replay_memory_capacity:
                 # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-                index = np.random.randint(low=(self.agent_history_length), high=(self.replay_memory_capacity+1), dtype=np.int32)
+                index = np.random.randint(low=self.agent_history_length, high=(self.replay_memory_capacity+1), dtype=np.int32)
             else:
             # If replay memory isn't full yet, sample from existing replay memory
             # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.

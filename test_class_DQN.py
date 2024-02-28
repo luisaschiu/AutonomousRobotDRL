@@ -205,11 +205,11 @@ if __name__ == "__main__":
         if cur_memory_size == replay_memory_capacity:
             # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
             # NOTE: We index by 0, so should I lower the low value by 1?
-            index = np.random.randint(low=(agent_history_length), high=(replay_memory_capacity+1), dtype=np.int32)
+            index = np.random.randint(low=agent_history_length, high=(replay_memory_capacity+1), dtype=np.int32)
         else:
         # If replay memory isn't full yet, sample from existing replay memory
         # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-            index = np.random.randint(low=(agent_history_length), high=(cur_memory_size+1), dtype=np.int32)
+            index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
         # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
         print("index: ", index)
         sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
