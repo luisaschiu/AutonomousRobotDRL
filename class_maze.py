@@ -13,7 +13,7 @@ class Maze:
         self.init_maze = np.copy(maze)
         self.maze = maze
         self.robot_location = start_pt
-        self.start_orientation = start_orientation
+        self.init_orientation = start_orientation
         self.robot_orientation = start_orientation//90
         self.marker = mpimg.imread(marker_filepath)
         self.start_pt = start_pt
@@ -95,7 +95,7 @@ class Maze:
     def reset(self, time_step):
         self.maze = self.init_maze
         self.robot_location = self.start_pt
-        self.robot_orientation = self.start_orientation//90
+        self.robot_orientation = self.init_orientation//90
         # self.traversed = np.array([])
         # Reset previously traversed locations for the next episode
         self.traversed = []
@@ -177,21 +177,17 @@ class Maze:
                 self.robot_location = (robot_x+1, robot_y)
                 
     def get_available_actions(self):
-        # TODO: Consider changing to returning None for invalid actions
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         valid_actions = []
-        # invalid_actions = [] #NOTE: For testing purposes, could just check for conditions rather than do the if/elif/else statements
         # valid_actions = ["UP", "DOWN", "LEFT", "RIGHT"]
 
         # Testing UP action:
         up_location = (robot_x, robot_y-1)
         # Maze Edge Check
         if ((up_location[0]) < 0 or (up_location[1] < 0) or (up_location[0] > self.maze.shape[0]-1) or (up_location[1] > self.maze.shape[1]-1)):
-            # invalid_actions.append("UP")
             valid_actions.append(None)
         # Wall Check
         elif self.maze[up_location[1], up_location[0]] == 1:
-            # invalid_actions.append("UP")
             valid_actions.append(None)
         else:
             valid_actions.append("UP")
@@ -200,11 +196,9 @@ class Maze:
         down_location = (robot_x, robot_y+1)
         # Maze Edge Check
         if ((down_location[0]) < 0 or (down_location[1] < 0) or (down_location[0] > self.maze.shape[0]-1) or (down_location[1] > self.maze.shape[1]-1)):
-            # invalid_actions.append("DOWN")
             valid_actions.append(None)
         # Wall Check
         elif self.maze[down_location[1], down_location[0]] == 1:
-            # invalid_actions.append("DOWN")
             valid_actions.append(None)
         else:
             valid_actions.append("DOWN")
@@ -213,11 +207,9 @@ class Maze:
         left_location = (robot_x-1, robot_y)
         # Maze Edge Check
         if ((left_location[1]) < 0 or (left_location[0] < 0) or (left_location[0] > self.maze.shape[0]-1) or (left_location[1] > self.maze.shape[1]-1)):
-            # invalid_actions.append("LEFT")
             valid_actions.append(None)
         # Wall Check
         elif self.maze[left_location[1], left_location[0]] == 1:
-            # invalid_actions.append("LEFT")
             valid_actions.append(None)
         else:
             valid_actions.append("LEFT")
@@ -226,11 +218,9 @@ class Maze:
         right_location = (robot_x+1, robot_y)
         # Maze Edge Check
         if ((right_location[1]) < 0 or (right_location[0] < 0) or (right_location[0] > self.maze.shape[0]-1) or (right_location[1] > self.maze.shape[1]-1)):
-            # invalid_actions.append("RIGHT")
             valid_actions.append(None)
         # Wall Check
         elif self.maze[right_location[1], right_location[0]] == 1:
-            # invalid_actions.append("RIGHT")
             valid_actions.append(None)
         else:
             valid_actions.append("RIGHT")

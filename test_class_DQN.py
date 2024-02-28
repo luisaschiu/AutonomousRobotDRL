@@ -52,7 +52,7 @@ class DQN:
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
         # From Google article pseudocode line 2: Initialize action-value function Q with random weights
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
-        input_layer = Input(shape = (self.state_size[0], self.state_size[1], 4), batch_size=self.minibatch_size)
+        input_layer = Input(shape = (self.state_size[0], self.state_size[1], self.agent_history_length), batch_size=self.minibatch_size)
         # input_layer = Input(shape = (389, 398, 4))
         normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
@@ -142,97 +142,132 @@ class DQN:
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
+    def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
+        """Update main q network by experience replay method.
+
+        Args:
+            state_batch (tf.float32): Batch of states.
+            action_batch (tf.int32): Batch of actions.
+            reward_batch (tf.float32): Batch of rewards.
+            next_state_batch (tf.float32): Batch of next states.
+            game_over_batch (tf.bool): Batch of game status.
+
+        Returns:
+            loss (tf.float32): Huber loss of temporal difference.
+        """
+
+        with tf.GradientTape() as tape:
+            next_state_q = self.target_model.predict(next_state_batch)
+            next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
+            expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
+            # tf.reduce_sum sums up all the Q-values for each sample in the batch.
+            # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
+            # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
+            main_q = tf.reduce_sum(self.model(state_batch) * tf.one_hot(action_batch, self.action_size, 1.0, 0.0), axis=1)
+            loss = losses.Huber(tf.stop_gradient(expected_q), main_q)
+
+        gradients = tape.gradient(loss, self.model.trainable_variables)
+        clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
+        # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
+        optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
+        optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+
+        metrics.Mean(name="loss").update_state(loss)
+        metrics.Mean(name="Q_value").update_state(main_q)
+
+        return loss
 if __name__ == "__main__":
-    # # Initial parameters: create maze
-    # # Testing one run of the train_agent code:
-    # maze_array = np.array(
-    # [[0.0, 1.0, 1.0, 0.0],
-    # [0.0, 0.0, 0.0, 0.0],
-    # [1.0, 1.0, 0.0, 1.0],
-    # [0.0, 1.0, 0.0, 0.0]])
-    # marker_filepath = "images/marker8.jpg"
-    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    # network = DQN((389, 389))
-    # model = network.build_model()
-    # next_state_batch = []
-    # time_step = 0    
-    # init_state = maze.reset(time_step)
-    # state = network.preprocess_image(time_step, init_state)
-    # episode_score = 0
+    # Initial parameters: create maze
+    # Testing one run of the train_agent code:
+    maze_array = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    marker_filepath = "images/marker8.jpg"
+    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    network = DQN((389, 389))
+    model = network.build_model()
+    next_state_batch = []
+    time_step = 0    
+    init_state = maze.reset(time_step)
+    state = network.preprocess_image(time_step, init_state)
+    episode_score = 0
 
 
-    # Test logic for finding valid_indices of minibatches
-    # Initial parameters, changed to scale down and test/debug
-    replay_memory_capacity = 12
-    replay_memory = deque(maxlen=replay_memory_capacity)
-    minibatch_size = 10
-    agent_history_length = 4
-    # Create random batches for testing:
-    mem0 = ("state0", "action0", "reward0", "next_state0", False)
-    mem1 = ("state1", "action1", "reward1", "next_state1", False)
-    mem2 = ("state2", "action2", "reward2", "next_state2", False)
-    mem3 = ("state3", "action3", "reward3", "next_state3", False)
-    mem4 = ("state4", "action4", "reward4", "next_state4", False)
-    mem5 = ("state5", "action5", "reward5", "next_state5", True)
-    mem6 = ("state6", "action6", "reward6", "next_state6", False)
-    mem7 = ("state7", "action7", "reward7", "next_state7", False)
-    mem8 = ("state8", "action8", "reward8", "next_state8", False)
-    mem9 = ("state9", "action9", "reward9", "next_state9", False)
-    mem10 = ("state10", "action10", "reward10", "next_state10", False)
-    mem11 = ("state11", "action11", "reward11", "next_state11", False)
-    mem12 = ("state12", "action12", "reward12", "next_state12", False)
-    replay_memory.append(mem0)
-    replay_memory.append(mem1)
-    replay_memory.append(mem2)
-    replay_memory.append(mem3)
-    replay_memory.append(mem4)
-    replay_memory.append(mem5)
-    replay_memory.append(mem6)
-    replay_memory.append(mem7)
-    replay_memory.append(mem8)
-    replay_memory.append(mem9)
-    replay_memory.append(mem10)
-    replay_memory.append(mem11)
-    # replay_memory.append(mem12)
-    print(replay_memory)
+    # # Test logic for finding valid_indices of minibatches
+    # # Initial parameters, changed to scale down and test/debug
+    # replay_memory_capacity = 12
+    # replay_memory = deque(maxlen=replay_memory_capacity)
+    # minibatch_size = 10
+    # agent_history_length = 4
+    # # Create random batches for testing:
+    # mem0 = ("state0", "action0", "reward0", "next_state0", False)
+    # mem1 = ("state1", "action1", "reward1", "next_state1", False)
+    # mem2 = ("state2", "action2", "reward2", "next_state2", False)
+    # mem3 = ("state3", "action3", "reward3", "next_state3", False)
+    # mem4 = ("state4", "action4", "reward4", "next_state4", False)
+    # mem5 = ("state5", "action5", "reward5", "next_state5", True)
+    # mem6 = ("state6", "action6", "reward6", "next_state6", False)
+    # mem7 = ("state7", "action7", "reward7", "next_state7", False)
+    # mem8 = ("state8", "action8", "reward8", "next_state8", False)
+    # mem9 = ("state9", "action9", "reward9", "next_state9", False)
+    # mem10 = ("state10", "action10", "reward10", "next_state10", False)
+    # mem11 = ("state11", "action11", "reward11", "next_state11", False)
+    # mem12 = ("state12", "action12", "reward12", "next_state12", False)
+    # replay_memory.append(mem0)
+    # replay_memory.append(mem1)
+    # replay_memory.append(mem2)
+    # replay_memory.append(mem3)
+    # replay_memory.append(mem4)
+    # replay_memory.append(mem5)
+    # replay_memory.append(mem6)
+    # replay_memory.append(mem7)
+    # replay_memory.append(mem8)
+    # replay_memory.append(mem9)
+    # replay_memory.append(mem10)
+    # replay_memory.append(mem11)
+    # # replay_memory.append(mem12)
+    # print(replay_memory)
 
-    # # Test slicing the deque to get the desired data within that interval
-    # sliced_deque = deque(itertools.islice(replay_memory, 0, 4))
-    # print("sliced: ", sliced_deque)
+    # # # Test slicing the deque to get the desired data within that interval
+    # # sliced_deque = deque(itertools.islice(replay_memory, 0, 4))
+    # # print("sliced: ", sliced_deque)
 
-    # Start of logic
-    indices_lst = []
-    cur_memory_size = len(replay_memory)
-    while len(indices_lst) < minibatch_size:
-        # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
-        if cur_memory_size == replay_memory_capacity:
-            # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-            # NOTE: We index by 0, so should I lower the low value by 1?
-            index = np.random.randint(low=agent_history_length, high=(replay_memory_capacity+1), dtype=np.int32)
-        else:
-        # If replay memory isn't full yet, sample from existing replay memory
-        # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
-            index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
-        # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
-        print("index: ", index)
-        sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
-        terminal_flag = False
-        for item in sliced_deque:
-            if item[4] == True:
-                terminal_flag = True
-                print(item[0], " won't work")
-                break
-            print(item[0], "works")
-        if terminal_flag == False:
-            indices_lst.append((index-1))
-    print(indices_lst)
-    state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = [], [], [], [], []
-    for index in indices_lst:
-        (state, action, reward, next_state, game_over) = replay_memory[index]
-        state_batch.append(state)
-        game_over_batch.append(game_over)
-    print(state_batch)
-    print(game_over_batch)
+    # # Start of logic
+    # indices_lst = []
+    # cur_memory_size = len(replay_memory)
+    # while len(indices_lst) < minibatch_size:
+    #     # If replay memory is full and has hit it's maximum capacity, find a random index in the range: history length and memory_capacity
+    #     if cur_memory_size == replay_memory_capacity:
+    #         # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+    #         # NOTE: We index by 0, so should I lower the low value by 1?
+    #         index = np.random.randint(low=agent_history_length, high=(replay_memory_capacity+1), dtype=np.int32)
+    #     else:
+    #     # If replay memory isn't full yet, sample from existing replay memory
+    #     # NOTE: The np.random.randint is choosing from [low, high). I increased high by 1 to have it be considered.
+    #         index = np.random.randint(low=agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
+    #     # If any cases are terminal, disregard and keep looking for a new random index to add onto the list
+    #     print("index: ", index)
+    #     sliced_deque = deque(itertools.islice(replay_memory, (index-agent_history_length), (index)))
+    #     terminal_flag = False
+    #     for item in sliced_deque:
+    #         if item[4] == True:
+    #             terminal_flag = True
+    #             print(item[0], " won't work")
+    #             break
+    #         print(item[0], "works")
+    #     if terminal_flag == False:
+    #         indices_lst.append((index-1))
+    # print(indices_lst)
+    # state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = [], [], [], [], []
+    # for index in indices_lst:
+    #     (state, action, reward, next_state, game_over) = replay_memory[index]
+    #     state_batch.append(state)
+    #     game_over_batch.append(game_over)
+    # print(state_batch)
+    # print(game_over_batch)
+
 
     # # Test inputting varying batch sizes in NN model
     # maze_array = np.array(

@@ -225,7 +225,6 @@ class DQN:
         return tensor_batch
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
-        game_over = False
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             time_step = 0
@@ -234,6 +233,7 @@ class DQN:
             state = self.preprocess_image(time_step, init_state)
             # episode_step = 0
             episode_score = 0.0
+            game_over = False
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(current_step=time_step)
@@ -257,7 +257,7 @@ class DQN:
                 if game_over:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(time_step))
-                    break
+                    # break
                 # if game_over == 'win':
                 #     self.win_history.append(1)
                 #     print('win') #TODO: Finish this print statement to provide more information
