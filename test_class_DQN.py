@@ -176,6 +176,7 @@ class DQN:
         metrics.Mean(name="Q_value").update_state(main_q)
 
         return loss
+
 if __name__ == "__main__":
     # Initial parameters: create maze
     # Testing one run of the train_agent code:

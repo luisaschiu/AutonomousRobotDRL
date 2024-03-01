@@ -225,32 +225,33 @@ class DQN:
         return tensor_batch
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
+        total_step = 0
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
-            time_step = 0
+            episode_step = 0
             # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
-            init_state = maze.reset(time_step)
-            state = self.preprocess_image(time_step, init_state)
+            init_state = maze.reset(episode_step)
+            state = self.preprocess_image(episode_step, init_state)
             # episode_step = 0
             episode_score = 0.0
             game_over = False
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
-                expl_rate = self.get_eps(current_step=time_step)
+                expl_rate = self.get_eps(total_step)
                 available_actions = maze.get_available_actions()
                 action = self.get_action(state, available_actions, expl_rate)
-                # NOTE: Should I only add to time_step if step was valid?
-                time_step += 1
+                total_step += 1
+                episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-                (next_state_img, reward, game_over) = maze.take_action(action, time_step)
+                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
-                next_state = self.preprocess_image(time_step, next_state_img)
+                next_state = self.preprocess_image(episode_step, next_state_img)
                 # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
                 self.remember(state, action, reward, next_state, game_over)
                 state = next_state
                 # From Google article pseudocode line 9: Sample random minibatch of transitions/experiences from D
-                if (time_step % self.agent_history_length == 0) and (time_step > self.replay_start_size):
+                if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch = self.generate_minibatch_samples()
                     self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch)
                 # From Google article pseudocode line 10: if episode terminates at step j+1
@@ -270,6 +271,5 @@ class DQN:
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
 
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
-                if ((episode % self.update_target_network_freq == 0) and (episode > self.replay_start_size)):
+                if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
                     self.update_target_model()
-
