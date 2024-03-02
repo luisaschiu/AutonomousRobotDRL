@@ -32,6 +32,10 @@ class DQN:
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
+        # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
+        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
+        self.loss_metric = metrics.Mean(name="loss")
+        self.Q_value_metric = metrics.Mean(name="Q_value")
 
     # Method with normalizing image
     def build_model(self):
@@ -112,7 +116,7 @@ class DQN:
             eps = terminal_eps
         return eps
     
-    # NOTE: update_main_model function taken from Atari game. Used to update main q-network.
+    @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
         """Update main q network by experience replay method.
 
@@ -126,27 +130,42 @@ class DQN:
         Returns:
             loss (tf.float32): Huber loss of temporal difference.
         """
-
         with tf.GradientTape() as tape:
-            next_state_q = self.target_model.predict(next_state_batch)
+            next_state_q = self.target_model(next_state_batch)
             next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
             # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
             # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
-            main_q = tf.reduce_sum(self.model(state_batch) * tf.one_hot(action_batch, self.action_size, 1.0, 0.0), axis=1)
-            loss = losses.Huber(tf.stop_gradient(expected_q), main_q)
+            unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])
+            action_indices = tf.argmax(tf.cast(tf.equal(unique_actions[:, tf.newaxis], action_batch), tf.int32), axis=0)
+            action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
+            main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
+            
+            # Output loss val tensor shape: (). This is a tensor scalar.
+            # print(main_q)
+            # print(expected_q)
+            # loss = losses.Huber(reduction=losses.Reduction.NONE)
+            # loss_val = loss(tf.stop_gradient(expected_q), main_q)
+            # print(loss_val)
 
-        gradients = tape.gradient(loss, self.model.trainable_variables)
+            # Output loss val tensor shape: (32,)
+            main_q_dim = tf.expand_dims(main_q, axis = 1)
+            expected_q_dim = tf.expand_dims(expected_q, axis = 1)
+            # print(main_q_dim)
+            # print(expected_q_dim)
+            loss = losses.Huber(reduction=losses.Reduction.NONE)
+            loss_val = loss(tf.stop_gradient(expected_q_dim), main_q_dim)
+            # print(loss_val)
+
+        gradients = tape.gradient(loss_val, self.model.trainable_variables)
         clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
-        # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
-        optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
-        optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+        self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
 
-        metrics.Mean(name="loss").update_state(loss)
-        metrics.Mean(name="Q_value").update_state(main_q)
+        self.loss_metric.update_state(loss_val)
+        self.Q_value_metric.update_state(main_q)
 
-        return loss
+        return loss_val
 
     # Generate batches of random memories pulled from self.replay_memory
     def generate_minibatch_samples(self):

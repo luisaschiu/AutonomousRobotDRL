@@ -18,6 +18,7 @@ class DQN:
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
         self.replay_start_size = 10
         # self.replay_start_size = 1e4
+        self.discount_factor = 0.99 # Also known as gamma
         self.minibatch_size = 32
         self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.update_target_network_freq = 1000
@@ -28,10 +29,15 @@ class DQN:
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 1e6
         self.final_exploration_frame = 200
+        self.learning_rate = 0.001
         self.target_model = models.clone_model(self.model)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
-
+        # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
+        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
+        self.loss_metric = metrics.Mean(name="loss")
+        self.Q_value_metric = metrics.Mean(name="Q_value")
+    
     # def build_model():
     #     # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
     #     # From Google article pseudocode line 2: Initialize action-value function Q with random weights
@@ -202,6 +208,69 @@ class DQN:
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
+    # @tf.custom_gradient
+    # def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
+    #     """Update main q network by experience replay method.
+
+    #     Args:
+    #         state_batch (tf.float32): Batch of states.
+    #         action_batch (tf.int32): Batch of actions.
+    #         reward_batch (tf.float32): Batch of rewards.
+    #         next_state_batch (tf.float32): Batch of next states.
+    #         game_over_batch (tf.bool): Batch of game status.
+
+    #     Returns:
+    #         loss (tf.float32): Huber loss of temporal difference.
+    #     """
+    #     with tf.GradientTape() as tape:
+    #         next_state_q = self.target_model(next_state_batch)
+    #         next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
+    #         expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
+    #         # tf.reduce_sum sums up all the Q-values for each sample in the batch.
+    #         # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
+    #         # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
+    #         unique_actions = ["UP", "DOWN", "LEFT", "RIGHT"]  # Get unique actions
+    #         action_to_index = {action: index for index, action in enumerate(unique_actions)}
+    #         action_batch_decoded = [action.decode() for action in action_batch.numpy()]
+    #         # Step 2: Map strings to integers
+    #         action_indices = [action_to_index[action] for action in action_batch_decoded]
+    #         # print(action_indices)
+    #         # Step 3: Perform one-hot encoding
+    #         action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
+    #         # print(action_one_hot)
+    #         main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
+            
+    #         # Output loss val tensor shape: (). This is a tensor scalar.
+    #         # print(main_q)
+    #         # print(expected_q)
+    #         # loss = losses.Huber(reduction=losses.Reduction.NONE)
+    #         # loss_val = loss(tf.stop_gradient(expected_q), main_q)
+    #         # print(loss_val)
+
+    #         # Output loss val tensor shape: (32,)
+    #         main_q_dim = tf.expand_dims(main_q, axis = 1)
+    #         expected_q_dim = tf.expand_dims(expected_q, axis = 1)
+    #         # print(main_q_dim)
+    #         # print(expected_q_dim)
+    #         loss = losses.Huber(reduction=losses.Reduction.NONE)
+    #         loss_val = loss(tf.stop_gradient(expected_q_dim), main_q_dim)
+    #         # print(loss_val)
+
+    #     gradients = tape.gradient(loss_val, self.model.trainable_variables)
+    #     clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
+    #     # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
+    #     optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
+    #     optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+
+    #     metrics.Mean(name="loss").update_state(loss_val)
+    #     metrics.Mean(name="Q_value").update_state(main_q)
+
+    #     def grad_fn(grads):
+    #         return grads  # Return the gradients as is
+    #     return loss_val, grad_fn
+
+
+    @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
         """Update main q network by experience replay method.
 
@@ -216,25 +285,42 @@ class DQN:
             loss (tf.float32): Huber loss of temporal difference.
         """
         with tf.GradientTape() as tape:
-            next_state_q = self.target_model.predict(next_state_batch)
+            next_state_q = self.target_model(next_state_batch)
             next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
             # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
             # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
-            main_q = tf.reduce_sum(self.model(state_batch) * tf.one_hot(action_batch, self.action_size, 1.0, 0.0), axis=1)
-            loss = losses.Huber(tf.stop_gradient(expected_q), main_q)
+            unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])  # Get unique actions as a TensorFlow constant
+            action_indices = tf.argmax(tf.cast(tf.equal(unique_actions[:, tf.newaxis], action_batch), tf.int32), axis=0)
+            # print(action_indices)
+            action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
+            main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
+            
+            # Output loss val tensor shape: (). This is a tensor scalar.
+            # print(main_q)
+            # print(expected_q)
+            # loss = losses.Huber(reduction=losses.Reduction.NONE)
+            # loss_val = loss(tf.stop_gradient(expected_q), main_q)
+            # print(loss_val)
 
-        gradients = tape.gradient(loss, self.model.trainable_variables)
+            # Output loss val tensor shape: (32,)
+            main_q_dim = tf.expand_dims(main_q, axis = 1)
+            expected_q_dim = tf.expand_dims(expected_q, axis = 1)
+            # print(main_q_dim)
+            # print(expected_q_dim)
+            loss = losses.Huber(reduction=losses.Reduction.NONE)
+            loss_val = loss(tf.stop_gradient(expected_q_dim), main_q_dim)
+            # print(loss_val)
+
+        gradients = tape.gradient(loss_val, self.model.trainable_variables)
         clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
-        # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
-        optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
-        optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+        self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
 
-        metrics.Mean(name="loss").update_state(loss)
-        metrics.Mean(name="Q_value").update_state(main_q)
+        self.loss_metric.update_state(loss_val)
+        self.Q_value_metric.update_state(main_q)
 
-        return loss
+        return loss_val
 
 if __name__ == "__main__":
     # Initial parameters: create maze
@@ -298,6 +384,39 @@ if __name__ == "__main__":
             network.update_target_model()
         print("ep step: ", episode_step)
 
+
+    # # Test loss value tensor shape in update_main_model()
+    # # main_q =[[0, 1], [0, 0], [0, 3]]
+    # # expected_q = [[0.6, 0.4], [0.4, 0.6], [7, 3]]
+    # main_q = [2, 4, 6, 8, 8]
+    # expected_q = [5, 6, 4, 6, 4]
+    # main_q_tensor = tf.expand_dims(tf.convert_to_tensor(main_q), axis = 1)
+    # exp_q_tensor=tf.expand_dims(tf.convert_to_tensor(expected_q), axis = 1)
+    # loss = losses.Huber(reduction=losses.Reduction.NONE)
+    # loss_val = loss(tf.stop_gradient(exp_q_tensor), main_q_tensor)
+    # print(loss_val)
+    # print(loss_val.shape)
+
+
+    # # Test one hot encoding for update_main_model()
+    # action_size = 4
+    # action_batch = ["UP", "DOWN", "UP", "LEFT", "LEFT", "RIGHT", "DOWN", "DOWN", "RIGHT"]
+    # action_tensor = tf.constant(action_batch, tf.string)
+    # print(action_tensor)
+    # # unique_actions = ["UP", "DOWN", "LEFT", "RIGHT"]  # Get unique actions
+    # # print(unique_actions)
+    # unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])  # Get unique actions as a TensorFlow constant
+    # action_indices = tf.argmax(tf.cast(tf.equal(unique_actions[:, tf.newaxis], action_tensor), tf.int32), axis=0)
+    # print(action_indices)
+    # action_one_hot = tf.one_hot(action_indices, depth=action_size, on_value=1.0, off_value=0.0)
+    # print(action_one_hot)
+    # # # Approach using numpy (Not able to use for @tf.function)
+    # # action_batch_np = np.array(action_batch)
+    # # action_indices = [action_to_index[action] for action in action_batch_np]
+    # # print(action_indices)
+    # # # Step 3: Perform one-hot encoding
+    # # action_one_hot = tf.one_hot(action_indices, depth=action_size, on_value=1.0, off_value=0.0)
+    # # print(action_one_hot)
 
 
     # # Test lambda layer normalizing the input layer
