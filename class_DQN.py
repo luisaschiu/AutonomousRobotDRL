@@ -23,16 +23,14 @@ class DQN:
         self.final_exploration_frame = 1e6
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_timesteps = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
+        self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
         self.model = self.build_model()
-        
-        self.target_model = self.build_model()
+        self.target_model = models.clone_model(self.model)
         self.update_target_network_freq = 1000
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
-        # NOTE: Bottom line of code might be redundant, unless I include the feature where I load existing trained weights from a given file
         self.target_model.set_weights(self.model.get_weights())
 
     # Method with normalizing image
@@ -229,12 +227,12 @@ class DQN:
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             episode_step = 0
+            episode_score = 0.0
+            game_over = False
             # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
             init_state = maze.reset(episode_step)
             state = self.preprocess_image(episode_step, init_state)
-            # episode_step = 0
-            episode_score = 0.0
-            game_over = False
+
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(total_step)
@@ -254,10 +252,12 @@ class DQN:
                 if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch = self.generate_minibatch_samples()
                     self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch)
+                if episode_step == self.max_steps_per_episode:
+                    game_over = True
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(time_step))
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # break
                 # if game_over == 'win':
                 #     self.win_history.append(1)

@@ -154,7 +154,7 @@ class Maze:
                 raise ActionError("ERROR: Wall detected. Cannot traverse " + direction + ".")
             else:
                 if (self.robot_orientation) != (expected_angle//90):
-                    print("Rotating Robot")
+                    # print("Rotating Robot")
                     self.robot_orientation = expected_angle//90
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x-1, robot_y)
