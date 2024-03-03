@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import ArUco_functions
+import AruCo_functions
 import os
 import glob
+
+from PIL import Image
 
 class Maze:
     def __init__(self, maze:np.array, marker_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
@@ -269,8 +271,15 @@ class Maze:
         new_state_img = self.generate_img(time_step)
         return (new_state_img, reward, game_over)
 
-    def produce_video():
-        pass
+    def produce_video(self):
+        fig, ax = plt.subplots()
+        frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
+        for i in range(len(frames)):
+            ax.clear()
+            frame = frames[i]
+            img = np.asarray(frame)
+            im = ax.imshow(img, animated=True)
+            plt.pause(0.5)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):
