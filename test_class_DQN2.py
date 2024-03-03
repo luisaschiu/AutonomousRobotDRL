@@ -108,14 +108,15 @@ class DQN:
         # reward_batch = tf.stack([tf.constant(reward, dtype=tf.float32) for reward in reward_batch])
         # game_over_batch = tf.stack([tf.constant(game_over, dtype=tf.bool) for game_over in game_over_batch])
 
-        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = [], [], [], [], []
+        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch = [], [], [], [], []
         for index in indices_lst:
-            (state, action, reward, next_state, game_over) = self.replay_memory[index]
+            (state, action, reward, next_state, game_over, next_state_available_actions) = self.replay_memory[index]
             state_batch.append(tf.constant(state, tf.float32))
             action_batch.append(tf.constant(action, tf.string))
             reward_batch.append(tf.constant(reward, tf.float32))
             next_state_batch.append(tf.constant(next_state, tf.float32))
             game_over_batch.append(tf.constant(game_over, tf.bool))
+            next_state_available_actions_batch.append(tf.constant(next_state_available_actions))
         # Organize the batch_size to have proper dimensions for state_batch and next_state_batch:
         # Initialize with the first tensor
         concatenated_state_tensor = state_batch[0] 
@@ -126,7 +127,7 @@ class DQN:
         for i in range(1, len(next_state_batch)):
             concatenated_next_state_tensor = tf.concat([concatenated_next_state_tensor, next_state_batch[i]], axis=0)
         # NOTE: action_batch, reward_batch, and game_over_batch will all have a tensor flow shape of: shape=(4,). Found through testing.
-        return concatenated_state_tensor, tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), concatenated_next_state_tensor, tf.stack(game_over_batch, axis=0)
+        return concatenated_state_tensor, tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), concatenated_next_state_tensor, tf.stack(game_over_batch, axis=0), tf.stack(next_state_available_actions_batch, axis=0)
 
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale
@@ -348,22 +349,23 @@ if __name__ == "__main__":
     while not game_over:
         # From Google article pseudocode line 5: With probability epsilon select a random action a_t
         expl_rate = network.get_eps(total_step)
-        available_actions = maze.get_available_actions()
-        action = network.get_action(state, available_actions, expl_rate)
+        state_available_actions = maze.get_available_actions()
+        action = network.get_action(state, state_available_actions, expl_rate)
         total_step += 1
         episode_step += 1
         # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
         (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
         episode_score += reward
+        next_state_available_actions = maze.get_available_actions()
         # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
         next_state = network.preprocess_image(episode_step, next_state_img)
         # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
-        network.remember(state, action, reward, next_state, game_over)
+        network.remember(state, action, reward, next_state, game_over, next_state_available_actions)
         state = next_state
         if (total_step % network.agent_history_length == 0) and (total_step > network.replay_start_size):
             print("Generating minibatch and updating main model")
-            state_batch, action_batch, reward_batch, next_state_batch, terminal_batch = network.generate_minibatch_samples()
-            network.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch)
+            state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = network.generate_minibatch_samples()
+            network.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
         if episode_step == network.max_steps_per_episode:
             game_over = True
         # From Google article pseudocode line 10: if episode terminates at step j+1
