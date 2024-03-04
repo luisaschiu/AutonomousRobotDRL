@@ -34,6 +34,7 @@ class DQN:
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1000)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
+    
 
     # Method with normalizing image
     def build_model(self):
@@ -76,36 +77,15 @@ class DQN:
                 # Since slicing the deque doesn't consider the last index, I have to offset the index by 1.
                 # Slice notation [start:stop] extracts elements from the index start up to, but not including, the index stop.
                 indices_lst.append(index-1)
-        # If going through all of those for loops are too computationally intensive, try this code from chatgpt:
-        # # Extract data from self.replay_memory based on indices_lst
-        # replay_data = [self.replay_memory[index] for index in indices_lst]
-        # # Separate the data into individual lists
-        # state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = zip(*replay_data)
-        # # Convert lists to tensors
-        # action_batch = tf.stack([tf.constant(action, dtype=tf.int32) for action in action_batch])
-        # reward_batch = tf.stack([tf.constant(reward, dtype=tf.float32) for reward in reward_batch])
-        # game_over_batch = tf.stack([tf.constant(game_over, dtype=tf.bool) for game_over in game_over_batch])
 
-        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch = [], [], [], [], [], []
-        for index in indices_lst:
-            (state, action, reward, next_state, game_over, next_state_available_actions) = self.replay_memory[index]
-            state_batch.append(tf.constant(state, tf.float32))
-            action_batch.append(tf.constant(action, tf.string))
-            reward_batch.append(tf.constant(reward, tf.float32))
-            next_state_batch.append(tf.constant(next_state, tf.float32))
-            game_over_batch.append(tf.constant(game_over, tf.bool))
-            next_state_available_actions_batch.append(tf.constant(next_state_available_actions, tf.int32))
-        # Organize the batch_size to have proper dimensions for state_batch and next_state_batch:
-        # Initialize with the first tensor
-        concatenated_state_tensor = state_batch[0] 
-        for i in range(1, len(next_state_batch)):
-            concatenated_state_tensor = tf.concat([concatenated_state_tensor, state_batch[i]], axis=0)
-        # Repeat for next_state_batch. Initialize with the first tensor.
-        concatenated_next_state_tensor = next_state_batch[0]
-        for i in range(1, len(next_state_batch)):
-            concatenated_next_state_tensor = tf.concat([concatenated_next_state_tensor, next_state_batch[i]], axis=0)
-        # NOTE: action_batch, reward_batch, and game_over_batch will all have a tensor flow shape of: shape=(4,). Found through testing.
-        return concatenated_state_tensor, tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), concatenated_next_state_tensor, tf.stack(game_over_batch, axis=0), tf.stack(next_state_available_actions_batch, axis=0)
+        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch = zip(*[self.replay_memory[index] for index in indices_lst])
+        state_batch = tf.reshape(tf.stack([tf.constant(state, tf.float32) for state in state_batch], axis=0), (-1, 389, 389, 4))
+        action_batch = tf.stack([tf.constant(action, tf.string) for action in action_batch], axis=0)
+        reward_batch = tf.stack([tf.constant(reward, tf.float32) for reward in reward_batch], axis=0)
+        next_state_batch = tf.reshape(tf.stack([tf.constant(next_state, tf.float32) for next_state in next_state_batch], axis=0), (-1, 389, 389, 4))
+        game_over_batch = tf.stack([tf.constant(game_over, tf.bool) for game_over in game_over_batch], axis=0)
+
+        return state_batch, action_batch, reward_batch, next_state_batch, game_over_batch
 
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale
@@ -181,6 +161,7 @@ class DQN:
 
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
+
 
     @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):

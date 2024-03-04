@@ -5,10 +5,12 @@ import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import AruCo_functions
+import AruCo_functions
 import os
 import glob
 
 class Maze:
+    def __init__(self, maze:np.array, marker_filepath:str, goal_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
     def __init__(self, maze:np.array, marker_filepath:str, goal_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
         self.init_maze = np.copy(maze)
         self.maze = maze
@@ -17,10 +19,12 @@ class Maze:
         self.robot_orientation = start_orientation//90
         self.marker = mpimg.imread(marker_filepath)
         self.goal_pc = mpimg.imread(goal_filepath)
+        self.goal_pc = mpimg.imread(goal_filepath)
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
+        self.min_reward = -2*maze.size
         self.min_reward = -2*maze.size
         self.total_reward = 0
 #        self.traversed = np.array([]) # creates an empty numpy array
@@ -35,16 +39,46 @@ class Maze:
         ax.set_xticks([])
         ax.set_yticks([])
 
+
         marker = self.marker
         marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
         imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
 
+
         ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
         ax.add_artist(ab)
+
 
         img = plt.imshow(self.maze, interpolation='none', cmap='binary')
         plt.show()
         return img
+
+    def resize_image_to_square(self, image_path, target_size):
+        """
+        Resizes an image to a square shape with the specified target size.
+
+        Args:
+            image_path (str): Path to the input image.
+            output_path (str): Path to save the resized image.
+            target_size (int): Desired size for both width and height.
+
+        Returns:
+            None
+        """
+        # Read the input image
+        image = cv.imread(image_path)
+
+        # Get the original dimensions
+        original_height, original_width = image.shape[:2]
+
+        # Calculate the scaling factor to make the image square
+        scale_factor = target_size / max(original_height, original_width)
+
+        # Resize the image to the target size
+        resized_image = cv.resize(image, (int(original_width * scale_factor), int(original_height * scale_factor)))
+
+        # Save the resized image
+        cv.imwrite(image_path, resized_image)
 
     def resize_image_to_square(self, image_path, target_size):
         """
@@ -82,7 +116,15 @@ class Maze:
         ax.set_yticks([])
         scaled_zoom =1/nrows
 
+        scaled_zoom =1/nrows
+
         marker = self.marker
+        marker = np.rot90(self.marker, k=self.robot_orientation)  # k = 1 means rotate it 90 degrees CC
+        # starbox = OffsetImage(self.goal_pc, zoom=scaled_zoom)
+        # goal = AnnotationBbox(starbox, (self.goal_pt[0], self.goal_pt[1]), frameon=False)
+        # ax.add_artist(goal)
+        imagebox = OffsetImage(marker, zoom=scaled_zoom, cmap='gray')
+        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon=False)
         marker = np.rot90(self.marker, k=self.robot_orientation)  # k = 1 means rotate it 90 degrees CC
         # starbox = OffsetImage(self.goal_pc, zoom=scaled_zoom)
         # goal = AnnotationBbox(starbox, (self.goal_pt[0], self.goal_pt[1]), frameon=False)
@@ -92,7 +134,12 @@ class Maze:
         ax.add_artist(ab)
 
         directory = 'robot_steps/'
+
+        directory = 'robot_steps/'
         plt.imshow(self.maze, interpolation='none', cmap='binary')
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        fig = plt.savefig(directory + str(time_step) + '.jpg', bbox_inches='tight')
         if not os.path.exists(directory):
             os.makedirs(directory)
         fig = plt.savefig(directory + str(time_step) + '.jpg', bbox_inches='tight')
@@ -102,7 +149,14 @@ class Maze:
 
         cv.imshow('Frame', image)
         cv.waitKey(50)
+        image = cv.imread(directory + str(time_step) + '.jpg')
+        # self.resize_image_to_square(directory + str(time_step) + '.jpg', image.shape[0])
+
+        cv.imshow('Frame', image)
+        cv.waitKey(50)
         return image
+
+            
 
             
 
@@ -115,6 +169,12 @@ class Maze:
         self.traversed = []
         self.timestep = 0
         self.total_reward = 0
+
+        directory = 'robot_steps/'
+        img_files = glob.glob(os.path.join(directory, "*.[pjJ][npNP][gG]*"))
+        for img_file in img_files:
+           os.remove(img_file)
+
 
         directory = 'robot_steps/'
         img_files = glob.glob(os.path.join(directory, "*.[pjJ][npNP][gG]*"))
@@ -256,13 +316,13 @@ class Maze:
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # Robot reached the goal
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-            return 1
+            return 5
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.04
+            return -2
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return 0.08
+            return 1
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -277,6 +337,8 @@ class Maze:
 
     def take_action(self, action: str, time_step):
         self.move_robot(action)
+        self.total_reward += self.get_reward()
+        return (self.generate_img(time_step), self.get_reward(), self.game_over())
         self.total_reward += self.get_reward()
         return (self.generate_img(time_step), self.get_reward(), self.game_over())
 
