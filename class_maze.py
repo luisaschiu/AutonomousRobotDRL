@@ -4,23 +4,24 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import ArUco_functions
+import AruCo_functions
 import os
 import glob
 
 class Maze:
-    def __init__(self, maze:np.array, marker_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
+    def __init__(self, maze:np.array, marker_filepath:str, goal_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
         self.init_maze = np.copy(maze)
         self.maze = maze
         self.robot_location = start_pt
         self.init_orientation = start_orientation
         self.robot_orientation = start_orientation//90
         self.marker = mpimg.imread(marker_filepath)
+        self.goal_pc = mpimg.imread(goal_filepath)
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
-        self.min_reward = -0.5*maze.size
+        self.min_reward = -2*maze.size
         self.total_reward = 0
 #        self.traversed = np.array([]) # creates an empty numpy array
 
@@ -33,74 +34,91 @@ class Maze:
         ax.set_yticks(np.arange(0.5, ncols, 1))
         ax.set_xticks([])
         ax.set_yticks([])
-        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
-        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
-        # Overlay marker onto the robot location
-        # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
+
         marker = self.marker
         marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
         imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
-        # TODO: Make zoom relative to maze size above, or else changing to a 
-        # larger maze may make the marker image too large compared to small maze squares
+
         ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
         ax.add_artist(ab)
-        # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
-        # Color the traversed locations
-        # for x, y in self.traversed:
-        #     # NOTE: Numpy array axes are different from what I defined as the axes.
-        #     self.maze[y, x] = 0.5
+
         img = plt.imshow(self.maze, interpolation='none', cmap='binary')
         plt.show()
         return img
 
+    def resize_image_to_square(self, image_path, target_size):
+        """
+        Resizes an image to a square shape with the specified target size.
+
+        Args:
+            image_path (str): Path to the input image.
+            output_path (str): Path to save the resized image.
+            target_size (int): Desired size for both width and height.
+
+        Returns:
+            None
+        """
+        # Read the input image
+        image = cv.imread(image_path)
+
+        # Get the original dimensions
+        original_height, original_width = image.shape[:2]
+
+        # Calculate the scaling factor to make the image square
+        scale_factor = target_size / max(original_height, original_width)
+
+        # Resize the image to the target size
+        resized_image = cv.resize(image, (int(original_width * scale_factor), int(original_height * scale_factor)))
+
+        # Save the resized image
+        cv.imwrite(image_path, resized_image)
+
     def generate_img(self, time_step):
-        # plt.grid(True)
         nrows, ncols = self.maze.shape
-        # print(self.maze.shape)
         ax = plt.gca()
         ax.set_xticks(np.arange(0.5, nrows, 1))
         ax.set_yticks(np.arange(0.5, ncols, 1))
         ax.set_xticks([])
         ax.set_yticks([])
-        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
-        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
-        # Overlay marker onto the robot location
-        # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
+        scaled_zoom =1/nrows
+
         marker = self.marker
-        marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
-        imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
-        # TODO: Make zoom relative to maze size above, or else changing to a 
-        # larger maze may make the marker image too large compared to small maze squares
-        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
+        marker = np.rot90(self.marker, k=self.robot_orientation)  # k = 1 means rotate it 90 degrees CC
+        # starbox = OffsetImage(self.goal_pc, zoom=scaled_zoom)
+        # goal = AnnotationBbox(starbox, (self.goal_pt[0], self.goal_pt[1]), frameon=False)
+        # ax.add_artist(goal)
+        imagebox = OffsetImage(marker, zoom=scaled_zoom, cmap='gray')
+        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon=False)
         ax.add_artist(ab)
-        # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
-        # Color the traversed locations
-        # for x, y in self.traversed:
-        #     # NOTE: Numpy array axes are different from what I defined as the axes.
-        #     self.maze[y, x] = 0.5
+
+        directory = 'robot_steps/'
         plt.imshow(self.maze, interpolation='none', cmap='binary')
-        # Check if folder/file path exists. If not, create one.
-        if not os.path.exists('robot_steps/'):
-            os.makedirs('robot_steps/')
-        # Save as a .jpg picture, named as current time step
-        fig = plt.savefig('robot_steps/' + str(time_step) + '.jpg', bbox_inches='tight')
-        # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        fig = plt.savefig(directory + str(time_step) + '.jpg', bbox_inches='tight')
         plt.close(fig)
-        image = cv.imread('robot_steps/' + str(time_step) + '.jpg')
-        # cv.imshow('img', image)
-        # cv.waitKey(0)
+        image = cv.imread(directory + str(time_step) + '.jpg')
+        # self.resize_image_to_square(directory + str(time_step) + '.jpg', image.shape[0])
+
+        cv.imshow('Frame', image)
+        cv.waitKey(50)
         return image
-        
+
+            
 
     def reset(self, time_step):
         self.maze = self.init_maze
         self.robot_location = self.start_pt
         self.robot_orientation = self.init_orientation//90
-        # self.traversed = np.array([])
-        # Reset previously traversed locations for the next episode
         self.traversed = []
         self.timestep = 0
         self.total_reward = 0
+
+        directory = 'robot_steps/'
+        img_files = glob.glob(os.path.join(directory, "*.[pjJ][npNP][gG]*"))
+        for img_file in img_files:
+           os.remove(img_file)
+
         cur_state_img = self.generate_img(time_step)
         return cur_state_img
 
@@ -235,13 +253,13 @@ class Maze:
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # Robot reached the goal
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-            return 1
+            return 5
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.25
+            return -2
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -1
+            return 1
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -253,21 +271,11 @@ class Maze:
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
             return True
         return False
-        # if self.total_reward < self.min_reward:
-        #     return 'lose'
-        # # If goal is reached
-        # if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-        #     return 'win'
-        # return 'not over'
 
     def take_action(self, action: str, time_step):
         self.move_robot(action)
-        reward = self.get_reward()
-        self.total_reward += reward
-        game_over = self.game_over()
-        # self.time_step += 1
-        new_state_img = self.generate_img(time_step)
-        return (new_state_img, reward, game_over)
+        self.total_reward += self.get_reward()
+        return (self.generate_img(time_step), self.get_reward(), self.game_over())
 
     def produce_video():
         pass

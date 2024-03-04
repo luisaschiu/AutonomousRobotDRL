@@ -21,7 +21,7 @@ class DQN:
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         self.final_exploration_frame = 1e6
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0001
         self.minibatch_size = 32
         self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
