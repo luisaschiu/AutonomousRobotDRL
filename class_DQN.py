@@ -113,7 +113,7 @@ class DQN:
         return eps
     
 
-@tf.function
+    @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
         """Update main q network by experience replay method.
 
@@ -266,21 +266,25 @@ class DQN:
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
                 (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
+                next_state_available_actions = maze.get_available_actions()
+                # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
                 next_state = self.preprocess_image(episode_step, next_state_img)
                 # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
-                self.remember(state, action, reward, next_state, game_over)
+                self.remember(state, action, reward, next_state, game_over, next_state_available_actions)
                 state = next_state
-                # From Google article pseudocode line 9: Sample random minibatch of transitions/experiences from D
                 if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
-                    state_batch, action_batch, reward_batch, next_state_batch, terminal_batch = self.generate_minibatch_samples()
-                    self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch)
+                    print("Generating minibatch and updating main model")
+                    state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
+                    # print("next_state_available_actions_batch")
+                    # print(next_state_available_actions_batch)
+                    self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    print('Episode Num: ' + str(0) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # break
                 # if game_over == 'win':
                 #     self.win_history.append(1)
