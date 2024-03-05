@@ -166,7 +166,6 @@ class DQN:
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
-
     @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
         """Update main q network by experience replay method.

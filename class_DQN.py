@@ -117,7 +117,7 @@ class DQN:
         return eps
     
     @tf.function
-    def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
+    def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
         """Update main q network by experience replay method.
 
         Args:
@@ -132,23 +132,29 @@ class DQN:
         """
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
-            next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
+            # print("next_state_q")
+            # print(next_state_q)
+            # tf.print(next_state_q)
+            # Replace unavailable actions with -infinity
+            masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
+            # print(masked_qval_tensor)
+            # Find largest q value within masked q tensor
+            next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
+            # print(largest_values)
+            # next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
+            # print("next_state_max_q")
+            # print(next_state_max_q)
+            # tf.print(next_state_max_q)
+            # Computes the expected Q-value using the Bellman equation.
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
             # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
             # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
-            unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])
+            unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])  # Get unique actions as a TensorFlow constant
             action_indices = tf.argmax(tf.cast(tf.equal(unique_actions[:, tf.newaxis], action_batch), tf.int32), axis=0)
+            # print(action_indices)
             action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
             main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
-            
-            # Output loss val tensor shape: (). This is a tensor scalar.
-            # print(main_q)
-            # print(expected_q)
-            # loss = losses.Huber(reduction=losses.Reduction.NONE)
-            # loss_val = loss(tf.stop_gradient(expected_q), main_q)
-            # print(loss_val)
-
             # Output loss val tensor shape: (32,)
             main_q_dim = tf.expand_dims(main_q, axis = 1)
             expected_q_dim = tf.expand_dims(expected_q, axis = 1)
