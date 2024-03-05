@@ -246,6 +246,7 @@ class DQN:
         return loss_val
 
 if __name__ == "__main__":
+    pass
     # # Initial parameters: create maze
     # # Testing one run of the train_agent code:
     # maze_array = np.array(
