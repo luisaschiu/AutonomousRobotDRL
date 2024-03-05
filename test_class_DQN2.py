@@ -246,49 +246,6 @@ class DQN:
         return loss_val
 
 if __name__ == "__main__":
-    # # Test get_action() logic:
-    # maze_array = np.array(
-    # [[0.0, 1.0, 1.0, 0.0],
-    # [0.0, 0.0, 0.0, 0.0],
-    # [1.0, 1.0, 0.0, 1.0],
-    # [0.0, 1.0, 0.0, 0.0]])
-    # marker_filepath = "images/marker8.jpg"
-    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    # network = DQN((389, 389))
-    # model = network.build_model()
-    # init_state = maze.reset(0)
-    # state = network.preprocess_image(0, init_state)
-    # available_actions = maze.get_available_actions()
-    # expl_rate = 1.0
-    # action = network.get_action(state, available_actions, expl_rate)
-    # print(action)
-    # (next_state_img, reward, game_over) = maze.take_action(action, 1)
-    # expl_rate = 0.3
-    # next_state = network.preprocess_image(1, next_state_img)
-    # available_actions = maze.get_available_actions()
-    # action = network.get_action(state, available_actions, expl_rate)
-    # print(action)
-    # state = next_state
-
-
-    # # Test finding highest max_val in array and choosing next best action(max q value) if the "best_action" is unavailable for get_action().
-    # actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
-    # # By random choice:
-    # print("random choice made: ")
-    # # Filter available actions
-    # valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
-    # print("valid_action: ", valid_actions)
-    # print(random.choice(valid_actions))
-    # # By model.predict (generating random q value array)
-    # test_array = np.array([0, 1, 0, 1])
-    # rand_qval_array = np.random.uniform(low=-1, high=1, size=(1, 4))
-    # print(rand_qval_array)
-    # masked_qval_array = np.where(test_array == 1, rand_qval_array, float('-inf'))
-    # print(masked_qval_array)
-    # max_col_index = np.argmax(np.max(masked_qval_array, axis=0))
-    # print(max_col_index)
-
-
     # # Initial parameters: create maze
     # # Testing one run of the train_agent code:
     # maze_array = np.array(
@@ -345,6 +302,49 @@ if __name__ == "__main__":
     #     if ((total_step % network.update_target_network_freq == 0) and (total_step > network.replay_start_size)):
     #         network.update_target_model()
     #     print("ep step: ", episode_step)
+
+
+    # # Test get_action() logic:
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # marker_filepath = "images/marker8.jpg"
+    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # network = DQN((389, 389))
+    # model = network.build_model()
+    # init_state = maze.reset(0)
+    # state = network.preprocess_image(0, init_state)
+    # available_actions = maze.get_available_actions()
+    # expl_rate = 1.0
+    # action = network.get_action(state, available_actions, expl_rate)
+    # print(action)
+    # (next_state_img, reward, game_over) = maze.take_action(action, 1)
+    # expl_rate = 0.3
+    # next_state = network.preprocess_image(1, next_state_img)
+    # available_actions = maze.get_available_actions()
+    # action = network.get_action(state, available_actions, expl_rate)
+    # print(action)
+    # state = next_state
+
+
+    # # Test finding highest max_val in array and choosing next best action(max q value) if the "best_action" is unavailable for get_action().
+    # actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
+    # # By random choice:
+    # print("random choice made: ")
+    # # Filter available actions
+    # valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
+    # print("valid_action: ", valid_actions)
+    # print(random.choice(valid_actions))
+    # # By model.predict (generating random q value array)
+    # test_array = np.array([0, 1, 0, 1])
+    # rand_qval_array = np.random.uniform(low=-1, high=1, size=(1, 4))
+    # print(rand_qval_array)
+    # masked_qval_array = np.where(test_array == 1, rand_qval_array, float('-inf'))
+    # print(masked_qval_array)
+    # max_col_index = np.argmax(np.max(masked_qval_array, axis=0))
+    # print(max_col_index)
 
 
     # # Test adjusting tensor to look for best q-value in tensor with an available action
@@ -620,6 +620,4 @@ if __name__ == "__main__":
     # game_over_batch.append(tf.constant(True, tf.bool))
     # game_over_tensor = tf.stack(game_over_batch, axis=0)
     # print(game_over_tensor)
-
-
 
