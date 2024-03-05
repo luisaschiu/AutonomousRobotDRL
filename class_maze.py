@@ -93,6 +93,8 @@ class Maze:
         
 
     def reset(self, time_step):
+        for filename in glob.glob('robot_steps/*.jpg'):
+            os.remove(filename)
         self.maze = self.init_maze
         self.robot_location = self.start_pt
         self.robot_orientation = self.init_orientation//90
@@ -185,45 +187,45 @@ class Maze:
         up_location = (robot_x, robot_y-1)
         # Maze Edge Check
         if ((up_location[0]) < 0 or (up_location[1] < 0) or (up_location[0] > self.maze.shape[0]-1) or (up_location[1] > self.maze.shape[1]-1)):
-            valid_actions.append(None)
+            valid_actions.append(0)
         # Wall Check
         elif self.maze[up_location[1], up_location[0]] == 1:
-            valid_actions.append(None)
+            valid_actions.append(0)
         else:
-            valid_actions.append("UP")
+            valid_actions.append(1)
 
         # Testing DOWN action:
         down_location = (robot_x, robot_y+1)
         # Maze Edge Check
         if ((down_location[0]) < 0 or (down_location[1] < 0) or (down_location[0] > self.maze.shape[0]-1) or (down_location[1] > self.maze.shape[1]-1)):
-            valid_actions.append(None)
+            valid_actions.append(0)
         # Wall Check
         elif self.maze[down_location[1], down_location[0]] == 1:
-            valid_actions.append(None)
+            valid_actions.append(0)
         else:
-            valid_actions.append("DOWN")
+            valid_actions.append(1)
         
         # Testing LEFT action:
         left_location = (robot_x-1, robot_y)
         # Maze Edge Check
         if ((left_location[1]) < 0 or (left_location[0] < 0) or (left_location[0] > self.maze.shape[0]-1) or (left_location[1] > self.maze.shape[1]-1)):
-            valid_actions.append(None)
+            valid_actions.append(0)
         # Wall Check
         elif self.maze[left_location[1], left_location[0]] == 1:
-            valid_actions.append(None)
+            valid_actions.append(0)
         else:
-            valid_actions.append("LEFT")
+            valid_actions.append(1)
 
         # Testing RIGHT action:
         right_location = (robot_x+1, robot_y)
         # Maze Edge Check
         if ((right_location[1]) < 0 or (right_location[0] < 0) or (right_location[0] > self.maze.shape[0]-1) or (right_location[1] > self.maze.shape[1]-1)):
-            valid_actions.append(None)
+            valid_actions.append(0)
         # Wall Check
         elif self.maze[right_location[1], right_location[0]] == 1:
-            valid_actions.append(None)
+            valid_actions.append(0)
         else:
-            valid_actions.append("RIGHT")
+            valid_actions.append(1)
 
         if all(action is None for action in valid_actions):
             raise ActionError("No actions available. Robot cannot move!")

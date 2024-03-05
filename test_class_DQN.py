@@ -192,11 +192,10 @@ class DQN:
             array =self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
             array_copy = array.copy()
-            array_shape = array.shape
             best_action_idx = None
             while best_action_idx is None:
                 max_idx = np.argmax(array_copy)
-                col_idx = np.unravel_index(max_idx, array_shape)[1]
+                col_idx = np.unravel_index(max_idx, array.shape)[1]
                 if available_actions[col_idx] is not None:
                     best_action_idx = col_idx
                     break
