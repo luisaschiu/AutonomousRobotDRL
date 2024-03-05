@@ -118,9 +118,6 @@ class DQN:
     
 
 @tf.function
-    
-
-    @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
         """Update main q network by experience replay method.
 
@@ -299,7 +296,7 @@ class DQN:
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    print('Episode Num: ' + str(0) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # break
                 # if game_over == 'win':
                 #     self.win_history.append(1)
