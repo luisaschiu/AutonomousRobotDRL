@@ -108,7 +108,7 @@ class DQN:
         # reward_batch = tf.stack([tf.constant(reward, dtype=tf.float32) for reward in reward_batch])
         # game_over_batch = tf.stack([tf.constant(game_over, dtype=tf.bool) for game_over in game_over_batch])
 
-        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch = [], [], [], [], []
+        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch = [], [], [], [], [], []
         for index in indices_lst:
             (state, action, reward, next_state, game_over, next_state_available_actions) = self.replay_memory[index]
             state_batch.append(tf.constant(state, tf.float32))
@@ -116,7 +116,7 @@ class DQN:
             reward_batch.append(tf.constant(reward, tf.float32))
             next_state_batch.append(tf.constant(next_state, tf.float32))
             game_over_batch.append(tf.constant(game_over, tf.bool))
-            next_state_available_actions_batch.append(tf.constant(next_state_available_actions))
+            next_state_available_actions_batch.append(tf.constant(next_state_available_actions, tf.int32))
         # Organize the batch_size to have proper dimensions for state_batch and next_state_batch:
         # Initialize with the first tensor
         concatenated_state_tensor = state_batch[0] 
@@ -148,8 +148,8 @@ class DQN:
             tensor_batch = tf.expand_dims(tensor_transposed, axis=0)  # Adding batch dimension
         return tensor_batch
 
-    def remember(self, state, action, reward, next_state, game_over):
-        self.replay_memory.append((state, action, reward, next_state, game_over))
+    def remember(self, state, action, reward, next_state, game_over, next_state_available_action):
+        self.replay_memory.append((state, action, reward, next_state, game_over, next_state_available_action))
 
     def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
         """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
@@ -184,95 +184,33 @@ class DQN:
         return eps
     
     def get_action(self, state, available_actions, expl_rate):
-        #  This means that every value within the range [0, 1) has an equal probability of being chosen.
+        # #  This means that every value within the range [0, 1) has an equal probability of being chosen.
+        actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
-            not_none_idx = [index for index, action in enumerate(available_actions) if action is not None]
-            random_idx = random.choice(not_none_idx)
-            return available_actions[random_idx]
+            # Filter available actions
+            valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
+            return random.choice(valid_actions)
         else:
-            array =self.model.predict(state)
+            array=self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
             array_copy = array.copy()
-            array_shape = array.shape
             best_action_idx = None
             while best_action_idx is None:
                 max_idx = np.argmax(array_copy)
-                col_idx = np.unravel_index(max_idx, array_shape)[1]
-                if available_actions[col_idx] is not None:
+                col_idx = np.unravel_index(max_idx, array.shape)[1]
+                if available_actions[col_idx] != 0:
                     best_action_idx = col_idx
                     break
-                # If best_action is None, find the next largest q-value within the multidimensional array
+                # If best_action is 0, find the next largest q-value within the multidimensional array
                 else:
                     array_copy.flat[max_idx] = np.iinfo(np.int32).min
-            return available_actions[best_action_idx]
+            return actions_list[best_action_idx]
 
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
-    # @tf.custom_gradient
-    # def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
-    #     """Update main q network by experience replay method.
-
-    #     Args:
-    #         state_batch (tf.float32): Batch of states.
-    #         action_batch (tf.int32): Batch of actions.
-    #         reward_batch (tf.float32): Batch of rewards.
-    #         next_state_batch (tf.float32): Batch of next states.
-    #         game_over_batch (tf.bool): Batch of game status.
-
-    #     Returns:
-    #         loss (tf.float32): Huber loss of temporal difference.
-    #     """
-    #     with tf.GradientTape() as tape:
-    #         next_state_q = self.target_model(next_state_batch)
-    #         next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
-    #         expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
-    #         # tf.reduce_sum sums up all the Q-values for each sample in the batch.
-    #         # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
-    #         # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
-    #         unique_actions = ["UP", "DOWN", "LEFT", "RIGHT"]  # Get unique actions
-    #         action_to_index = {action: index for index, action in enumerate(unique_actions)}
-    #         action_batch_decoded = [action.decode() for action in action_batch.numpy()]
-    #         # Step 2: Map strings to integers
-    #         action_indices = [action_to_index[action] for action in action_batch_decoded]
-    #         # print(action_indices)
-    #         # Step 3: Perform one-hot encoding
-    #         action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
-    #         # print(action_one_hot)
-    #         main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
-            
-    #         # Output loss val tensor shape: (). This is a tensor scalar.
-    #         # print(main_q)
-    #         # print(expected_q)
-    #         # loss = losses.Huber(reduction=losses.Reduction.NONE)
-    #         # loss_val = loss(tf.stop_gradient(expected_q), main_q)
-    #         # print(loss_val)
-
-    #         # Output loss val tensor shape: (32,)
-    #         main_q_dim = tf.expand_dims(main_q, axis = 1)
-    #         expected_q_dim = tf.expand_dims(expected_q, axis = 1)
-    #         # print(main_q_dim)
-    #         # print(expected_q_dim)
-    #         loss = losses.Huber(reduction=losses.Reduction.NONE)
-    #         loss_val = loss(tf.stop_gradient(expected_q_dim), main_q_dim)
-    #         # print(loss_val)
-
-    #     gradients = tape.gradient(loss_val, self.model.trainable_variables)
-    #     clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
-    #     # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
-    #     optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
-    #     optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
-
-    #     metrics.Mean(name="loss").update_state(loss_val)
-    #     metrics.Mean(name="Q_value").update_state(main_q)
-
-    #     def grad_fn(grads):
-    #         return grads  # Return the gradients as is
-    #     return loss_val, grad_fn
-
-
     @tf.function
-    def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
+    def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
         """Update main q network by experience replay method.
 
         Args:
@@ -288,10 +226,19 @@ class DQN:
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
             print("next_state_q")
+            print(next_state_q)
             tf.print(next_state_q)
-            next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
+            # Replace unavailable actions with -infinity
+            masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
+            # print(masked_qval_tensor)
+            # Find largest q value within masked q tensor
+            next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
+            # print(largest_values)
+            # next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
             print("next_state_max_q")
+            print(next_state_max_q)
             tf.print(next_state_max_q)
+            # Computes the expected Q-value using the Bellman equation.
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
             # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
@@ -301,14 +248,6 @@ class DQN:
             # print(action_indices)
             action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
             main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
-            
-            # Output loss val tensor shape: (). This is a tensor scalar.
-            # print(main_q)
-            # print(expected_q)
-            # loss = losses.Huber(reduction=losses.Reduction.NONE)
-            # loss_val = loss(tf.stop_gradient(expected_q), main_q)
-            # print(loss_val)
-
             # Output loss val tensor shape: (32,)
             main_q_dim = tf.expand_dims(main_q, axis = 1)
             expected_q_dim = tf.expand_dims(expected_q, axis = 1)
@@ -328,6 +267,21 @@ class DQN:
         return loss_val
 
 if __name__ == "__main__":
+    # test_tensor = tf.constant([[0, 0, 0, 1,],
+    #                 [1, 1, 0, 0],
+    #                 [0, 1, 1, 1],
+    #                 [1, 1, 0, 0],
+    #                 [0, 1, 0, 1],
+    #                 [1, 1, 0, 0],
+    #                 [0, 1, 1, 1]], tf.int32)
+    # print(test_tensor)
+    # rand_qval_tensor = tf.random.uniform(shape=(7, 4), minval=-1, maxval=1)
+    # print(rand_qval_tensor)
+    # masked_qval_tensor = tf.where(test_tensor == 1, rand_qval_tensor, tf.constant(float('-inf'), shape=rand_qval_tensor.shape))
+    # print(masked_qval_tensor)
+    # largest_values = tf.math.reduce_max(masked_qval_tensor, axis=1)
+    # print(largest_values)
+
     # Initial parameters: create maze
     # Testing one run of the train_agent code:
     maze_array = np.array(
@@ -350,6 +304,7 @@ if __name__ == "__main__":
         # From Google article pseudocode line 5: With probability epsilon select a random action a_t
         expl_rate = network.get_eps(total_step)
         state_available_actions = maze.get_available_actions()
+        # print(state_available_actions)
         action = network.get_action(state, state_available_actions, expl_rate)
         total_step += 1
         episode_step += 1
@@ -357,6 +312,7 @@ if __name__ == "__main__":
         (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
         episode_score += reward
         next_state_available_actions = maze.get_available_actions()
+        # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
         # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
         next_state = network.preprocess_image(episode_step, next_state_img)
         # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
@@ -365,6 +321,8 @@ if __name__ == "__main__":
         if (total_step % network.agent_history_length == 0) and (total_step > network.replay_start_size):
             print("Generating minibatch and updating main model")
             state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = network.generate_minibatch_samples()
+            # print("next_state_available_actions_batch")
+            # print(next_state_available_actions_batch)
             network.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
         if episode_step == network.max_steps_per_episode:
             game_over = True

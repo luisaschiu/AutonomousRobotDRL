@@ -166,8 +166,6 @@ class DQN:
     def get_action(self, state, available_actions, expl_rate):
         # #  This means that every value within the range [0, 1) has an equal probability of being chosen.
         actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
-        # #  This means that every value within the range [0, 1) has an equal probability of being chosen.
-        actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
             # Filter available actions
             valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
@@ -177,29 +175,25 @@ class DQN:
             return random.choice(valid_actions)
         else:
             array=self.model.predict(state)
-            array=self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
-            print(array)
-            masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
-            print(masked_qval_array)
-            max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
-            print(max_val_index)
-            return actions_list[max_val_index]    
-
-            print(array)
-            masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
-            print(masked_qval_array)
-            max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
-            print(max_val_index)
-            return actions_list[max_val_index]    
-
+            array_copy = array.copy()
+            best_action_idx = None
+            while best_action_idx is None:
+                max_idx = np.argmax(array_copy)
+                col_idx = np.unravel_index(max_idx, array.shape)[1]
+                if available_actions[col_idx] is not None:
+                    best_action_idx = col_idx
+                    break
+                # If best_action is None, find the next largest q-value within the multidimensional array
+                else:
+                    array_copy.flat[max_idx] = np.iinfo(np.int32).min
+            return available_actions[best_action_idx]
 
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
 
     @tf.function
-    def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
         """Update main q network by experience replay method.
 
