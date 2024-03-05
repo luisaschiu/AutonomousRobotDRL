@@ -94,21 +94,21 @@ class DQN:
         terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
         # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
         if current_step < self.replay_start_size:
-            print("In if statement")
+            # print("In if statement")
             eps = self.init_exploration_rate
         # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
         # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
         elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
-            print("In 1st elif statement")
+            # print("In 1st elif statement")
             eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
         # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
         elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
-            print("In 2nd elif statement")
+            # print("In 2nd elif statement")
             eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
         else:
             # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
             # there is a very low chance of exploration.
-            print("In else statement")
+            # print("In else statement")
             eps = terminal_eps
         return eps
     
@@ -129,9 +129,9 @@ class DQN:
         """
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
-            print("next_state_q")
-            print(next_state_q)
-            tf.print(next_state_q)
+            # print("next_state_q")
+            # print(next_state_q)
+            # tf.print(next_state_q)
             # Replace unavailable actions with -infinity
             masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
             # print(masked_qval_tensor)
@@ -139,9 +139,9 @@ class DQN:
             next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
             # print(largest_values)
             # next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
-            print("next_state_max_q")
-            print(next_state_max_q)
-            tf.print(next_state_max_q)
+            # print("next_state_max_q")
+            # print(next_state_max_q)
+            # tf.print(next_state_max_q)
             # Computes the expected Q-value using the Bellman equation.
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
@@ -284,7 +284,7 @@ class DQN:
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(0) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # break
                 # if game_over == 'win':
                 #     self.win_history.append(1)
