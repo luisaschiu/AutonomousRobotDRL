@@ -207,68 +207,6 @@ class DQN:
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
-    # @tf.custom_gradient
-    # def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
-    #     """Update main q network by experience replay method.
-
-    #     Args:
-    #         state_batch (tf.float32): Batch of states.
-    #         action_batch (tf.int32): Batch of actions.
-    #         reward_batch (tf.float32): Batch of rewards.
-    #         next_state_batch (tf.float32): Batch of next states.
-    #         game_over_batch (tf.bool): Batch of game status.
-
-    #     Returns:
-    #         loss (tf.float32): Huber loss of temporal difference.
-    #     """
-    #     with tf.GradientTape() as tape:
-    #         next_state_q = self.target_model(next_state_batch)
-    #         next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
-    #         expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
-    #         # tf.reduce_sum sums up all the Q-values for each sample in the batch.
-    #         # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
-    #         # main_q would theoretically yield a tensor vector of size (batch_size, action_size), which is (32, 4)
-    #         unique_actions = ["UP", "DOWN", "LEFT", "RIGHT"]  # Get unique actions
-    #         action_to_index = {action: index for index, action in enumerate(unique_actions)}
-    #         action_batch_decoded = [action.decode() for action in action_batch.numpy()]
-    #         # Step 2: Map strings to integers
-    #         action_indices = [action_to_index[action] for action in action_batch_decoded]
-    #         # print(action_indices)
-    #         # Step 3: Perform one-hot encoding
-    #         action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
-    #         # print(action_one_hot)
-    #         main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
-            
-    #         # Output loss val tensor shape: (). This is a tensor scalar.
-    #         # print(main_q)
-    #         # print(expected_q)
-    #         # loss = losses.Huber(reduction=losses.Reduction.NONE)
-    #         # loss_val = loss(tf.stop_gradient(expected_q), main_q)
-    #         # print(loss_val)
-
-    #         # Output loss val tensor shape: (32,)
-    #         main_q_dim = tf.expand_dims(main_q, axis = 1)
-    #         expected_q_dim = tf.expand_dims(expected_q, axis = 1)
-    #         # print(main_q_dim)
-    #         # print(expected_q_dim)
-    #         loss = losses.Huber(reduction=losses.Reduction.NONE)
-    #         loss_val = loss(tf.stop_gradient(expected_q_dim), main_q_dim)
-    #         # print(loss_val)
-
-    #     gradients = tape.gradient(loss_val, self.model.trainable_variables)
-    #     clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
-    #     # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
-    #     optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
-    #     optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
-
-    #     metrics.Mean(name="loss").update_state(loss_val)
-    #     metrics.Mean(name="Q_value").update_state(main_q)
-
-    #     def grad_fn(grads):
-    #         return grads  # Return the gradients as is
-    #     return loss_val, grad_fn
-
-
     @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch):
         """Update main q network by experience replay method.

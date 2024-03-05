@@ -37,22 +37,6 @@ class DQN:
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
-    
-    # def build_model():
-    #     # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
-    #     # From Google article pseudocode line 2: Initialize action-value function Q with random weights
-    #     model = models.Sequential()
-    #     init = initializers.VarianceScaling(scale=2.0)
-    #     # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
-    #     model.add(layers.Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=init))
-    #     model.add(layers.Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=init))
-    #     model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=init))
-    #     model.add(layers.Flatten())
-    #     # Fully connected layer with 512 units, ReLU activation
-    #     model.add(layers.Dense(512, activation='relu', kernel_initializer=init))
-    #     # Output layer
-    #     model.add(layers.Dense(4, activation='linear', kernel_initializer=init))
-    #     return model
 
     # Method with normalizing image
     def build_model(self):
@@ -193,18 +177,13 @@ class DQN:
         else:
             array=self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
-            array_copy = array.copy()
-            best_action_idx = None
-            while best_action_idx is None:
-                max_idx = np.argmax(array_copy)
-                col_idx = np.unravel_index(max_idx, array.shape)[1]
-                if available_actions[col_idx] != 0:
-                    best_action_idx = col_idx
-                    break
-                # If best_action is 0, find the next largest q-value within the multidimensional array
-                else:
-                    array_copy.flat[max_idx] = np.iinfo(np.int32).min
-            return actions_list[best_action_idx]
+            print(array)
+            masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
+            print(masked_qval_array)
+            max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
+            print(max_val_index)
+            return actions_list[max_val_index]    
+
 
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
@@ -267,6 +246,108 @@ class DQN:
         return loss_val
 
 if __name__ == "__main__":
+    # # Test get_action() logic:
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # marker_filepath = "images/marker8.jpg"
+    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # network = DQN((389, 389))
+    # model = network.build_model()
+    # init_state = maze.reset(0)
+    # state = network.preprocess_image(0, init_state)
+    # available_actions = maze.get_available_actions()
+    # expl_rate = 1.0
+    # action = network.get_action(state, available_actions, expl_rate)
+    # print(action)
+    # (next_state_img, reward, game_over) = maze.take_action(action, 1)
+    # expl_rate = 0.3
+    # next_state = network.preprocess_image(1, next_state_img)
+    # available_actions = maze.get_available_actions()
+    # action = network.get_action(state, available_actions, expl_rate)
+    # print(action)
+    # state = next_state
+
+
+    # # Test finding highest max_val in array and choosing next best action(max q value) if the "best_action" is unavailable for get_action().
+    # actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
+    # # By random choice:
+    # print("random choice made: ")
+    # # Filter available actions
+    # valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
+    # print("valid_action: ", valid_actions)
+    # print(random.choice(valid_actions))
+    # # By model.predict (generating random q value array)
+    # test_array = np.array([0, 1, 0, 1])
+    # rand_qval_array = np.random.uniform(low=-1, high=1, size=(1, 4))
+    # print(rand_qval_array)
+    # masked_qval_array = np.where(test_array == 1, rand_qval_array, float('-inf'))
+    # print(masked_qval_array)
+    # max_col_index = np.argmax(np.max(masked_qval_array, axis=0))
+    # print(max_col_index)
+
+
+    # # Initial parameters: create maze
+    # # Testing one run of the train_agent code:
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # marker_filepath = "images/marker8.jpg"
+    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # network = DQN((389, 389))
+    # model = network.build_model()
+    # next_state_batch = []
+    # total_step = 0
+    # episode_step = 0
+    # episode_score = 0
+    # init_state = maze.reset(episode_step)
+    # state = network.preprocess_image(episode_step, init_state)
+    # game_over = False
+    # while not game_over:
+    #     # From Google article pseudocode line 5: With probability epsilon select a random action a_t
+    #     expl_rate = network.get_eps(total_step)
+    #     state_available_actions = maze.get_available_actions()
+    #     # print(state_available_actions)
+    #     action = network.get_action(state, state_available_actions, expl_rate)
+    #     total_step += 1
+    #     episode_step += 1
+    #     # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
+    #     (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+    #     episode_score += reward
+    #     next_state_available_actions = maze.get_available_actions()
+    #     # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
+    #     # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
+    #     next_state = network.preprocess_image(episode_step, next_state_img)
+    #     # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
+    #     network.remember(state, action, reward, next_state, game_over, next_state_available_actions)
+    #     state = next_state
+    #     if (total_step % network.agent_history_length == 0) and (total_step > network.replay_start_size):
+    #         print("Generating minibatch and updating main model")
+    #         state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = network.generate_minibatch_samples()
+    #         # print("next_state_available_actions_batch")
+    #         # print(next_state_available_actions_batch)
+    #         network.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+    #     if episode_step == network.max_steps_per_episode:
+    #         game_over = True
+    #     # From Google article pseudocode line 10: if episode terminates at step j+1
+    #     if game_over:
+    #         print('Game Over.')
+    #         print('Episode Num: ' + str(0) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+    #         # break
+    #     # If episode does not terminate... continue onto last lines of pseudocode
+    #     # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
+            
+    #     # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
+    #     if ((total_step % network.update_target_network_freq == 0) and (total_step > network.replay_start_size)):
+    #         network.update_target_model()
+    #     print("ep step: ", episode_step)
+
+
+    # # Test adjusting tensor to look for best q-value in tensor with an available action
     # test_tensor = tf.constant([[0, 0, 0, 1,],
     #                 [1, 1, 0, 0],
     #                 [0, 1, 1, 1],
@@ -281,72 +362,6 @@ if __name__ == "__main__":
     # print(masked_qval_tensor)
     # largest_values = tf.math.reduce_max(masked_qval_tensor, axis=1)
     # print(largest_values)
-
-    # Initial parameters: create maze
-    # Testing one run of the train_agent code:
-    maze_array = np.array(
-    [[0.0, 1.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0],
-    [1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 0.0]])
-    marker_filepath = "images/marker8.jpg"
-    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    network = DQN((389, 389))
-    model = network.build_model()
-    next_state_batch = []
-    total_step = 0
-    episode_step = 0
-    episode_score = 0
-    init_state = maze.reset(episode_step)
-    state = network.preprocess_image(episode_step, init_state)
-    game_over = False
-    while not game_over:
-        # From Google article pseudocode line 5: With probability epsilon select a random action a_t
-        expl_rate = network.get_eps(total_step)
-        state_available_actions = maze.get_available_actions()
-        # print(state_available_actions)
-        action = network.get_action(state, state_available_actions, expl_rate)
-        total_step += 1
-        episode_step += 1
-        # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-        (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
-        episode_score += reward
-        next_state_available_actions = maze.get_available_actions()
-        # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
-        # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
-        next_state = network.preprocess_image(episode_step, next_state_img)
-        # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
-        network.remember(state, action, reward, next_state, game_over, next_state_available_actions)
-        state = next_state
-        if (total_step % network.agent_history_length == 0) and (total_step > network.replay_start_size):
-            print("Generating minibatch and updating main model")
-            state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = network.generate_minibatch_samples()
-            # print("next_state_available_actions_batch")
-            # print(next_state_available_actions_batch)
-            network.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
-        if episode_step == network.max_steps_per_episode:
-            game_over = True
-        # From Google article pseudocode line 10: if episode terminates at step j+1
-        if game_over:
-            print('Game Over.')
-            print('Episode Num: ' + str(0) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-            # break
-        
-        # if game_over == 'win':
-        #     network.win_history.append(1)
-        #     print('win') #TODO: Finish this print statement to provide more information
-        #     break
-        # elif game_over == 'lose':
-        #     network.win_history.append(0)
-        #     print('lose')
-        #     break
-        # If episode does not terminate... continue onto last lines of pseudocode
-        # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
-
-        # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
-        if ((total_step % network.update_target_network_freq == 0) and (total_step > network.replay_start_size)):
-            network.update_target_model()
-        print("ep step: ", episode_step)
 
 
     # # Test loss value tensor shape in update_main_model()
@@ -383,7 +398,7 @@ if __name__ == "__main__":
     # # print(action_one_hot)
 
 
-    # # Test lambda layer normalizing the input layer
+    # # Test lambda layer normalizing the input layer in build_model()
     # print("Before normalizing, input data:")
     # print(state)
     # input_layer = Input(shape = (389, 389, 4), batch_size=32)
@@ -399,29 +414,24 @@ if __name__ == "__main__":
     # episode_score += reward
     # next_state = network.preprocess_image(episode_step, next_state_img)
     # network.remember(state, action, -1, next_state, game_over)
-
     # action = "RIGHT"
     # (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
     # episode_score += reward
     # next_state = network.preprocess_image(episode_step, next_state_img)
     # network.remember(state, action, -1, next_state, game_over)
-
     # action = "RIGHT"
     # (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
     # episode_score += reward
     # next_state = network.preprocess_image(episode_step, next_state_img)
     # network.remember(state, action, -1, next_state, game_over)
-
     # action = "LEFT"
     # (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
     # episode_score += reward
     # next_state = network.preprocess_image(episode_step, next_state_img)
-
     # action = "RIGHT"
     # (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
     # episode_score += reward
     # next_state = network.preprocess_image(episode_step, next_state_img)
-
     # network.remember(state, action, -1, next_state, game_over)
     # state_batch, action_batch, reward_batch, next_state_batch, terminal_batch = network.generate_minibatch_samples()
     # test = network.target_model.predict(next_state_batch)
@@ -470,7 +480,7 @@ if __name__ == "__main__":
     # print(network.get_eps(200000))
 
 
-    # # Test logic for finding valid_indices of minibatches
+    # # Test logic for finding valid_indices of minibatches in generate_minibatch_samples()
     # # Initial parameters, changed to scale down and test/debug
     # replay_memory_capacity = 12
     # replay_memory = deque(maxlen=replay_memory_capacity)
@@ -508,8 +518,7 @@ if __name__ == "__main__":
     # # # Test slicing the deque to get the desired data within that interval
     # # sliced_deque = deque(itertools.islice(replay_memory, 0, 4))
     # # print("sliced: ", sliced_deque)
-
-    # # Start of logic
+    # # Start of logic for general deque slicing
     # indices_lst = []
     # cur_memory_size = len(replay_memory)
     # while len(indices_lst) < minibatch_size:
@@ -544,7 +553,7 @@ if __name__ == "__main__":
     # print(game_over_batch)
 
 
-    # # Test inputting varying batch sizes in NN model
+    # # Test inputting varying batch size inputs in .predict for model
     # maze_array = np.array(
     # [[0.0, 1.0, 1.0, 0.0],
     # [0.0, 0.0, 0.0, 0.0],
@@ -603,7 +612,7 @@ if __name__ == "__main__":
     # tester =  model.predict(state)
 
 
-    # # Test output shape of batches that are not state or next_state
+    # # Test output shape of batches that are not state or next_state in generate_minibatch_samples()
     # game_over_batch = []
     # game_over_batch.append(tf.constant(True, tf.bool))
     # game_over_batch.append(tf.constant(True, tf.bool))
@@ -613,53 +622,4 @@ if __name__ == "__main__":
     # print(game_over_tensor)
 
 
-    # # Test finding highest max_val in a multi-dimensional array and choosing next best action(max q value) if the "best_action" is unavailable.
-    # available_actions = [None, "DOWN", None, "RIGHT"]
-    # arr = np.array([[20, 3, 0, 4],
-    #                 [3, -5, 60, 2],
-    #                 [3000, -3300, 3, -3]])
-    # # Copy array
-    # array_copy = arr.copy()
-    # array_shape = arr.shape
-    # valid_idx = None
-    # while valid_idx is None:
-    #     max_idx = np.argmax(array_copy)
-    #     col_idx = np.unravel_index(max_idx, array_shape)[1]
-    #     if available_actions[col_idx] is not None:
-    #         valid_idx = col_idx
-    #         break
-    #     else:
-    #         array_copy.flat[max_idx] = np.iinfo(np.int32).min  # Set original max value to a very low integer
-    # print(available_actions[col_idx])
 
-
-    # # Find index of max value and find next highest:
-    # max_index = np.argmax(arr)
-    # # Copy array and set the maximum value to a very low number
-    # arr_copy = arr.copy()
-    # arr_copy.flat[max_index] = np.iinfo(np.int32).min  # Set original max value to a very low integer
-    # # Find index of next highest value
-    # next_highest_index_flat = np.argmax(arr_copy)
-    # # Convert flat index to index in the original array
-    # next_highest_index = np.unravel_index(next_highest_index_flat, arr.shape)
-    # # print("Max index value:", max_index)
-    # print("Index of maximum value:", np.unravel_index(max_index, arr.shape))
-    # # print("Next max index value:", next_highest_index_flat)
-    # print("Index of next highest value:", next_highest_index)
-
-
-
-    # Test exploring and choosing a random action in available_actions list:
-    # available_actions = [None, "DOWN", None, "RIGHT"]
-    # not_none_idx = [index for index, action in enumerate(available_actions) if action is not None]
-    # For exploring:
-    # print(not_none_idx)
-    # random_idx = random.choice(not_none_idx)
-    # print(available_actions[random_idx])
-
-
-    # An idea to vary batchsize:
-    # # Define a placeholder for the batch size 
-    # batch_size = None
-    # # Create a placeholder tensor with shape (batch_size, height, width, channels)
-    # input_tensor = tf.placeholder(tf.float32, shape=(batch_size, 84, 84, 4))
