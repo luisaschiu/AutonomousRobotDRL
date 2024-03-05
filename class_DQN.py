@@ -133,9 +133,9 @@ class DQN:
         """
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
-            print("next_state_q")
-            print(next_state_q)
-            tf.print(next_state_q)
+            # print("next_state_q")
+            # print(next_state_q)
+            # tf.print(next_state_q)
             # Replace unavailable actions with -infinity
             masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
             # print(masked_qval_tensor)
@@ -143,9 +143,9 @@ class DQN:
             next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
             # print(largest_values)
             # next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
-            print("next_state_max_q")
-            print(next_state_max_q)
-            tf.print(next_state_max_q)
+            # print("next_state_max_q")
+            # print(next_state_max_q)
+            # tf.print(next_state_max_q)
             # Computes the expected Q-value using the Bellman equation.
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
@@ -296,7 +296,7 @@ class DQN:
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(0) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # break
                 # if game_over == 'win':
                 #     self.win_history.append(1)
