@@ -34,6 +34,22 @@ class DQN:
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1000)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
+    
+    # def build_model():
+    #     # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
+    #     # From Google article pseudocode line 2: Initialize action-value function Q with random weights
+    #     model = models.Sequential()
+    #     init = initializers.VarianceScaling(scale=2.0)
+    #     # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
+    #     model.add(layers.Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=init))
+    #     model.add(layers.Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=init))
+    #     model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=init))
+    #     model.add(layers.Flatten())
+    #     # Fully connected layer with 512 units, ReLU activation
+    #     model.add(layers.Dense(512, activation='relu', kernel_initializer=init))
+    #     # Output layer
+    #     model.add(layers.Dense(4, activation='linear', kernel_initializer=init))
+    #     return model
 
     # Method with normalizing image
     def build_model(self):
@@ -128,8 +144,6 @@ class DQN:
 
     def remember(self, state, action, reward, next_state, game_over, next_state_available_action):
         self.replay_memory.append((state, action, reward, next_state, game_over, next_state_available_action))
-    def remember(self, state, action, reward, next_state, game_over, next_state_available_action):
-        self.replay_memory.append((state, action, reward, next_state, game_over, next_state_available_action))
 
     def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
         """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
@@ -166,28 +180,22 @@ class DQN:
     def get_action(self, state, available_actions, expl_rate):
         # #  This means that every value within the range [0, 1) has an equal probability of being chosen.
         actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
+        # #  This means that every value within the range [0, 1) has an equal probability of being chosen.
+        actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
-            # Filter available actions
-            valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
-            return random.choice(valid_actions)
             # Filter available actions
             valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
             return random.choice(valid_actions)
         else:
             array=self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
-            array_copy = array.copy()
-            best_action_idx = None
-            while best_action_idx is None:
-                max_idx = np.argmax(array_copy)
-                col_idx = np.unravel_index(max_idx, array.shape)[1]
-                if available_actions[col_idx] is not None:
-                    best_action_idx = col_idx
-                    break
-                # If best_action is None, find the next largest q-value within the multidimensional array
-                else:
-                    array_copy.flat[max_idx] = np.iinfo(np.int32).min
-            return available_actions[best_action_idx]
+            print(array)
+            masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
+            print(masked_qval_array)
+            max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
+            print(max_val_index)
+            return actions_list[max_val_index]    
+
 
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
@@ -209,10 +217,19 @@ class DQN:
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
             print("next_state_q")
+            print(next_state_q)
             tf.print(next_state_q)
-            next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
+            # Replace unavailable actions with -infinity
+            masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
+            # print(masked_qval_tensor)
+            # Find largest q value within masked q tensor
+            next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
+            # print(largest_values)
+            # next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
             print("next_state_max_q")
+            print(next_state_max_q)
             tf.print(next_state_max_q)
+            # Computes the expected Q-value using the Bellman equation.
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.
             # tf.one_hot creates an encoding of the action batch with a depth of self.action_size.
