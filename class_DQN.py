@@ -16,14 +16,14 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 1e4
+        self.replay_start_size = 8
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         self.final_exploration_frame = 1e6
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
+        self.max_steps_per_episode = 16 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
@@ -279,13 +279,13 @@ class DQN:
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
                     # print("next_state_available_actions_batch")
                     # print(next_state_available_actions_batch)
-                    self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    print('Loss: ' + str(loss))
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
                 if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
-                    loss = self.update_target_model()
-                    print('Loss: ' + str(loss))
+                    self.update_target_model()
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
