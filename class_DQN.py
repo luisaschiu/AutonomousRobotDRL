@@ -25,10 +25,10 @@ class DQN:
         self.minibatch_size = 32
         self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
+        self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
         self.update_target_network_freq = 1000
-        self.agent_history_length = 4 # Number of images from each timestep stacked
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
@@ -281,11 +281,15 @@ class DQN:
                     self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
+                # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
+                if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
+                    loss = self.update_target_model()
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step) + ', Loss: ' + str(loss))
                     # break
+                print("total steps: ", total_step)
                 # if game_over == 'win':
                 #     self.win_history.append(1)
                 #     print('win') #TODO: Finish this print statement to provide more information
@@ -297,6 +301,3 @@ class DQN:
                 # If episode does not terminate... continue onto last lines of pseudocode
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
 
-                # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
-                if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
-                    self.update_target_model()
