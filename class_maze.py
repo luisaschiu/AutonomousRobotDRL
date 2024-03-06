@@ -11,7 +11,6 @@ import glob
 
 class Maze:
     def __init__(self, maze:np.array, marker_filepath:str, goal_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
-    def __init__(self, maze:np.array, marker_filepath:str, goal_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
         self.init_maze = np.copy(maze)
         self.maze = maze
         self.robot_location = start_pt
@@ -19,20 +18,15 @@ class Maze:
         self.robot_orientation = start_orientation//90
         self.marker = mpimg.imread(marker_filepath)
         self.goal_pc = mpimg.imread(goal_filepath)
-        self.goal_pc = mpimg.imread(goal_filepath)
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
         self.min_reward = -2*maze.size
-        self.min_reward = -2*maze.size
         self.total_reward = 0
-#        self.traversed = np.array([]) # creates an empty numpy array
 
     def show(self):
-        # plt.grid(True)
         nrows, ncols = self.maze.shape
-        # print(self.maze.shape)
         ax = plt.gca()
         ax.set_xticks(np.arange(0.5, nrows, 1))
         ax.set_yticks(np.arange(0.5, ncols, 1))
