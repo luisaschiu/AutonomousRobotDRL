@@ -246,6 +246,7 @@ class DQN:
         return tensor_batch
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
+        loss = 0
         total_step = 0
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
@@ -284,10 +285,11 @@ class DQN:
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
                 if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
                     loss = self.update_target_model()
+                    print('Loss: ' + str(loss))
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     print('Game Over.')
-                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step) + ', Loss: ' + str(loss))
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # break
                 print("total steps: ", total_step)
                 # if game_over == 'win':
