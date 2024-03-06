@@ -248,18 +248,19 @@ class Maze:
         return valid_actions
 
     def get_reward(self):
+        # TODO: Implement Markov Reward??
         # TODO: Look into penalty reward for traversed locations and advancing to new spot (maybe swap or alter)
         # NOTE: Do I account for maze edges or walls here?
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # Robot reached the goal
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-            return 5
+            return 1
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -2
+            return -0.04
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return 1
+            return 0.08
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
