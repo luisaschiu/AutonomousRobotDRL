@@ -248,6 +248,7 @@ class DQN:
     def train_agent(self, maze: Maze, num_episodes = 1e7):
         loss = 0
         total_step = 0
+        maze.deleteGifs()
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             episode_step = 0
@@ -290,6 +291,7 @@ class DQN:
                 if game_over:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    maze.produce_video(str(episode))
                     # break
                 print("total steps: ", total_step)
                 # if game_over == 'win':
@@ -302,4 +304,3 @@ class DQN:
                 #     break
                 # If episode does not terminate... continue onto last lines of pseudocode
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
-

@@ -4,9 +4,11 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import ArUco_functions
+import AruCo_functions
 import os
 import glob
+
+from PIL import Image
 
 class Maze:
     def __init__(self, maze:np.array, marker_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
@@ -54,6 +56,7 @@ class Maze:
         return img
 
     def generate_img(self, time_step):
+        IMAGE_DIGITS = 2 # images go up to two digits, used to prepend 0's to the front of image names
         # plt.grid(True)
         nrows, ncols = self.maze.shape
         # print(self.maze.shape)
@@ -83,15 +86,20 @@ class Maze:
         if not os.path.exists('robot_steps/'):
             os.makedirs('robot_steps/')
         # Save as a .jpg picture, named as current time step
-        fig = plt.savefig('robot_steps/' + str(time_step) + '.jpg', bbox_inches='tight')
+        image_num = str(time_step)
+        image_num = (IMAGE_DIGITS - len(image_num)) * "0" + image_num
+        fig = plt.savefig('robot_steps/' + image_num + '.jpg', bbox_inches='tight')
         # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
         plt.close(fig)
-        image = cv.imread('robot_steps/' + str(time_step) + '.jpg')
-        # cv.imshow('img', image)
-        # cv.waitKey(0)
+        image = cv.imread('robot_steps/' + image_num + '.jpg')
+        cv.imshow('Frame', image)
+        cv.waitKey(1)
         return image
+    
+    def deleteGifs(self):
+        for filename in glob.glob('gifs/*.gif'):
+            os.remove(filename)
         
-
     def reset(self, time_step):
         for filename in glob.glob('robot_steps/*.jpg'):
             os.remove(filename)
@@ -271,8 +279,14 @@ class Maze:
         new_state_img = self.generate_img(time_step)
         return (new_state_img, reward, game_over)
 
-    def produce_video():
-        pass
+    def produce_video(self, episodeNum: str):
+        GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
+        fig, ax = plt.subplots()
+        frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
+        frame_one = frames[0]
+        gif_name = "gifs/" + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
+        frame_one.save(gif_name, format="GIF", append_images=frames,
+               save_all=True, duration=300, loop=0)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):
