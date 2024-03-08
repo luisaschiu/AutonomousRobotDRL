@@ -13,6 +13,3 @@ marker_filepath = "images/marker8.jpg"
 maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
 network = DQN((389, 389))
 network.train_agent(maze, 25)
-
-# maze/dqn now have a realTimeFlag attribute
-# default is True, can be set in both classes
