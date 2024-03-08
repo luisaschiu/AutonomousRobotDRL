@@ -1,6 +1,6 @@
 import numpy as np
 from class_maze import Maze
-import ArUco_functions
+import AruCo_functions
 import cv2 as cv
 import os
 import glob
@@ -20,6 +20,8 @@ maze_array = np.array(
 
 marker_filepath = "images/marker8.jpg"
 maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+
+maze.generate_img(0)
 # maze.show()
 
 init= maze.reset(0)
@@ -46,6 +48,7 @@ print(maze.get_available_actions())
 # maze.reset(0)
 # maze.show()
 # test = maze.reset(8)
+maze.produce_video()
 
 # Testing AruCo marker angle and location parameters after images are generated
 # images = glob.glob('robot_steps/*.jpg')
