@@ -11,7 +11,7 @@ import glob
 from PIL import Image
 
 class Maze:
-    def __init__(self, maze:np.array, marker_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int, realTimeFlag=True):
+    def __init__(self, maze:np.array, marker_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
         self.init_maze = np.copy(maze)
         self.maze = maze
         self.robot_location = start_pt
@@ -25,7 +25,6 @@ class Maze:
         self.min_reward = -0.5*maze.size
         self.total_reward = 0
 #        self.traversed = np.array([]) # creates an empty numpy array
-        self.realTimeFlag = realTimeFlag
 
     def show(self):
         # plt.grid(True)
@@ -56,7 +55,7 @@ class Maze:
         plt.show()
         return img
 
-    def generate_img(self, time_step, realTimeFlag=True):
+    def generate_img(self, time_step):
         IMAGE_DIGITS = 2 # images go up to two digits, used to prepend 0's to the front of image names
         # plt.grid(True)
         nrows, ncols = self.maze.shape
@@ -93,9 +92,8 @@ class Maze:
         # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
         plt.close(fig)
         image = cv.imread('robot_steps/' + image_num + '.jpg')
-        if realTimeFlag:
-            cv.imshow('Frame', image)
-            cv.waitKey(1)
+        cv.imshow('Frame', image)
+        cv.waitKey(1)
         return image
     
     def deleteGifs(self):
@@ -113,7 +111,7 @@ class Maze:
         self.traversed = []
         self.timestep = 0
         self.total_reward = 0
-        cur_state_img = self.generate_img(time_step, self.realTimeFlag)
+        cur_state_img = self.generate_img(time_step)
         return cur_state_img
 
     def move_robot(self, direction:str):
@@ -278,10 +276,10 @@ class Maze:
         self.total_reward += reward
         game_over = self.game_over()
         # self.time_step += 1
-        new_state_img = self.generate_img(time_step, self.realTimeFlag)
+        new_state_img = self.generate_img(time_step)
         return (new_state_img, reward, game_over)
 
-    def produce_video(self, episodeNum: str, realTimeFlag=True):
+    def produce_video(self, episodeNum: str):
         GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
         fig, ax = plt.subplots()
         frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
@@ -289,19 +287,6 @@ class Maze:
         gif_name = "gifs/" + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
-        
-        # Currently pauses training to display gif, probably should change?
-        if not realTimeFlag:
-            for image_path in glob.glob(f"robot_steps/*.JPG"):
-                image = cv.imread(image_path)
-                cv.imshow('Frame', image)
-                cv.waitKey(1)
-            # for i in range(len(frames)):
-            #     ax.clear()
-            #     frame = frames[i]
-            #     img = np.asarray(frame)
-            #     im = ax.imshow(img, animated=True)
-            #     plt.pause(0.3)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):

@@ -9,7 +9,7 @@ import cv2 as cv
 import itertools
 
 class DQN:
-    def __init__(self, state_size, realTimeFlag=True):
+    def __init__(self, state_size):
         # State size is the image size
         self.state_size = state_size
         self.action_size = 4
@@ -36,7 +36,6 @@ class DQN:
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
-        self.realTimeFlag = realTimeFlag
 
     # Method with normalizing image
     def build_model(self):
@@ -292,7 +291,7 @@ class DQN:
                 if game_over:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                    maze.produce_video(str(episode), realTimeFlag=self.realTimeFlag)
+                    maze.produce_video(str(episode))
                     # break
                 print("total steps: ", total_step)
                 # if game_over == 'win':
