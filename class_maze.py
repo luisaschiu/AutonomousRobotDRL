@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import AruCo_functions
+import ArUco_functions
 import os
 import glob
 
@@ -281,7 +281,6 @@ class Maze:
 
     def produce_video(self, episodeNum: str):
         GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
-        fig, ax = plt.subplots()
         frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
         frame_one = frames[0]
         gif_name = "gifs/" + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"

@@ -28,7 +28,7 @@ class DQN:
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_freq = 1000
+        self.update_target_network_freq = 20
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
@@ -168,7 +168,8 @@ class DQN:
         self.loss_metric.update_state(loss_val)
         self.Q_value_metric.update_state(main_q)
 
-        return loss_val
+        avg_loss = tf.math.reduce_mean(loss_val)
+        return avg_loss
 
     # Generate batches of random memories pulled from self.replay_memory
     def generate_minibatch_samples(self):
@@ -281,7 +282,7 @@ class DQN:
                     # print("next_state_available_actions_batch")
                     # print(next_state_available_actions_batch)
                     loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
-                    print('Loss: ' + str(loss))
+                    print('Loss: ' + str(loss.numpy()))
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
@@ -293,7 +294,8 @@ class DQN:
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     maze.produce_video(str(episode))
                     # break
-                print("total steps: ", total_step)
+                # print("total steps: ", total_step)
+                    
                 # if game_over == 'win':
                 #     self.win_history.append(1)
                 #     print('win') #TODO: Finish this print statement to provide more information

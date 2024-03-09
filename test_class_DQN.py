@@ -242,11 +242,17 @@ class DQN:
 
         self.loss_metric.update_state(loss_val)
         self.Q_value_metric.update_state(main_q)
-
-        return loss_val
+        mean = tf.math.reduce_mean(loss_val)
+        # print(mean.numpy())
+        return mean.numpy()
 
 if __name__ == "__main__":
     pass
+    # Test finding mean of tensor:
+    # test_tensor = tf.constant([0.1, 0.4, 0.6, 0.8, 0.3689], tf.float32)
+    # mean = tf.math.reduce_mean(test_tensor)
+    # print(mean.numpy())
+
     # # Initial parameters: create maze
     # # Testing one run of the train_agent code:
     # maze_array = np.array(
