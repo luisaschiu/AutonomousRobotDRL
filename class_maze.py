@@ -21,6 +21,7 @@ class Maze:
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         self.traversed = []
+        self.num_traversed = 0
         # self.min_reward = -2*maze.size
         self.total_reward = 0
         self.hidden_goal = hidden_goal
@@ -196,19 +197,18 @@ class Maze:
         return valid_actions
 
     def get_reward(self):
-        # TODO: Implement Markov Reward??
-        # TODO: Look into penalty reward for traversed locations and advancing to new spot (maybe swap or alter)
-        # NOTE: Do I account for maze edges or walls here?
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # Robot reached the goal
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
+            self.num_traversed = 0
             return 1
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -2
+            self.num_traversed = self.num_traversed + 1
+            return -0.04 * self.num_traversed
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -0.5
+            return -0.04
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -224,6 +224,7 @@ class Maze:
     def take_action(self, action: str, time_step):
         self.move_robot(action)
         self.total_reward += self.get_reward()
+        print(self.total_reward)
         return (self.generate_img(time_step), self.get_reward(), self.game_over())
 
     def produce_video():

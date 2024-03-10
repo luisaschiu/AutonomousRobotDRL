@@ -7,21 +7,25 @@ from tensorflow.keras import initializers, models, optimizers, metrics, losses
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 import cv2 as cv
 import itertools
+import time
+
+# Pre-compute unique_actions
+unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])
 
 class DQN:
-    def __init__(self, state_size):
+    def __init__(self, state_size, size):
         self.state_size = state_size
         self.action_size = 4
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 20
+        self.replay_start_size = size * 2
         self.gamma = 0.99
         self.epsilon_start = 0.9
         self.epsilon_end = 0.05
-        self.final_exploration_frame = 1e6
-        self.learning_rate = 0.0001
-        self.minibatch_size = 32
-        self.max_steps_per_episode = 4 * self.state_size[0]
+        self.final_exploration_frame = size**2
+        self.learning_rate = 1e-4
+        self.minibatch_size = 10
+        self.max_steps_per_episode = size**2
         self.win_history = []
         self.agent_history_length = 4
         self.model = self.build_model()
@@ -29,7 +33,7 @@ class DQN:
         self.update_target_network_period = 10
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         self.target_model.set_weights(self.model.get_weights())
-        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-4)
+        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-8)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
 
@@ -87,24 +91,11 @@ class DQN:
 
     @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
-        """Update main q network by experience replay method.
-
-        Args:
-            state_batch (tf.float32): Batch of states.
-            action_batch (tf.int32): Batch of actions.
-            reward_batch (tf.float32): Batch of rewards.
-            next_state_batch (tf.float32): Batch of next states.
-            game_over_batch (tf.bool): Batch of game status.
-
-        Returns:
-            loss (tf.float32): Huber loss of temporal difference.
-        """
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
             masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
             next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
             expected_q = reward_batch + self.gamma * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
-            unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])
             action_indices = tf.argmax(tf.cast(tf.equal(unique_actions[:, tf.newaxis], action_batch), tf.int32), axis=0)
             action_one_hot = tf.one_hot(action_indices, depth=self.action_size, on_value=1.0, off_value=0.0)
             main_q = tf.reduce_sum(self.model(state_batch) * action_one_hot, axis=1)
@@ -115,7 +106,8 @@ class DQN:
 
         gradients = tape.gradient(loss_val, self.model.trainable_variables)
         clipped_gradients = [tf.clip_by_norm(grad, 10) for grad in gradients]
-        self.optimizer.apply_gradients(zip(clipped_gradients, self.model.trainable_variables))
+        for var, grad in zip(self.model.trainable_variables, clipped_gradients):
+            var.assign_sub(self.learning_rate * grad)
 
         self.loss_metric.update_state(loss_val)
         self.Q_value_metric.update_state(main_q)
@@ -123,38 +115,32 @@ class DQN:
         return loss_val
 
     def generate_minibatch_samples(self):
-        indices_lst = []
+        start_time = time.time()
+        indices_lst = np.zeros(self.minibatch_size, dtype=np.int32)
         cur_memory_size = len(self.replay_memory)
-        while len(indices_lst) < self.minibatch_size:
+        count = 0
+        while count < self.minibatch_size:
             if cur_memory_size == self.replay_memory_capacity:
                 index = np.random.randint(low=self.agent_history_length, high=(self.replay_memory_capacity+1), dtype=np.int32)
             else:
                 index = np.random.randint(low=self.agent_history_length, high=(cur_memory_size+1), dtype=np.int32)
-            sliced_deque = deque(itertools.islice(self.replay_memory, (index-self.agent_history_length), (index)))
-            terminal_flag = False
-            for item in sliced_deque:
-                if item[4] == True:
-                    terminal_flag = True
-                    break
-            if terminal_flag == False:
-                indices_lst.append(index-1)
+            if not any(item[4] for item in list(self.replay_memory)[index-self.agent_history_length:index]):
+                indices_lst[count] = index - 1
+                count += 1
 
-        state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch = [], [], [], [], [], []
-        for index in indices_lst:
-            (state, action, reward, next_state, game_over, next_state_available_actions) = self.replay_memory[index]
-            state_batch.append(tf.constant(state, tf.float32))
-            action_batch.append(tf.constant(action, tf.string))
-            reward_batch.append(tf.constant(reward, tf.float32))
-            next_state_batch.append(tf.constant(next_state, tf.float32))
-            game_over_batch.append(tf.constant(game_over, tf.bool))
-            next_state_available_actions_batch.append(tf.constant(next_state_available_actions, tf.int32))
-        concatenated_state_tensor = state_batch[0] 
-        for i in range(1, len(next_state_batch)):
-            concatenated_state_tensor = tf.concat([concatenated_state_tensor, state_batch[i]], axis=0)
-        concatenated_next_state_tensor = next_state_batch[0]
-        for i in range(1, len(next_state_batch)):
-            concatenated_next_state_tensor = tf.concat([concatenated_next_state_tensor, next_state_batch[i]], axis=0)
+        state_batch = [tf.constant(self.replay_memory[index][0], tf.float32) for index in indices_lst]
+        action_batch = [tf.constant(self.replay_memory[index][1], tf.string) for index in indices_lst]
+        reward_batch = [tf.constant(self.replay_memory[index][2], tf.float32) for index in indices_lst]
+        next_state_batch = [tf.constant(self.replay_memory[index][3], tf.float32) for index in indices_lst]
+        game_over_batch = [tf.constant(self.replay_memory[index][4], tf.bool) for index in indices_lst]
+        next_state_available_actions_batch = [tf.constant(self.replay_memory[index][5], tf.int32) for index in indices_lst]
+
+        concatenated_state_tensor = tf.concat(state_batch, axis=0)
+        concatenated_next_state_tensor = tf.concat(next_state_batch, axis=0)
+        end_time = time.time()
+        print(f"Execution time of generate_minibatch_samples() is {end_time - start_time} seconds")
         return concatenated_state_tensor, tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), concatenated_next_state_tensor, tf.stack(game_over_batch, axis=0), tf.stack(next_state_available_actions_batch, axis=0)
+
 
     def preprocess_image(self, time_step, new_image):
         new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
@@ -181,6 +167,7 @@ class DQN:
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
         total_step = 0
+        scores=[]
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             episode_step = 0
@@ -204,11 +191,20 @@ class DQN:
                 if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
                     print("Generating minibatch and updating main model")
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
-                    self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    start_time = time.time()
+                    loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    end_time = time.time()
+                    print(f"Execution time of the function updata_main_model() is {end_time - start_time} seconds")
+                    print(f"Loss = {np.mean(loss)}\n")
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
+                    maze.num_traversed =0
                 if game_over:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    scores.append((episode,episode_score))
                 if ((total_step % self.update_target_network_period == 0) and (total_step > self.replay_start_size)):
                     self.update_target_model()
+            
+        return scores
+                
