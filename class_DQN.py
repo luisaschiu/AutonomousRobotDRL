@@ -14,19 +14,19 @@ class DQN:
         self.action_size = 4
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 1e4
+        self.replay_start_size = 20
         self.gamma = 0.99
         self.epsilon_start = 0.9
         self.epsilon_end = 0.05
         self.final_exploration_frame = 1e6
         self.learning_rate = 0.0001
-        self.minibatch_size = 128
+        self.minibatch_size = 32
         self.max_steps_per_episode = 4 * self.state_size[0]
         self.win_history = []
         self.agent_history_length = 4
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_freq = 1000
+        self.update_target_network_period = 10
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         self.target_model.set_weights(self.model.get_weights())
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-4)
@@ -158,18 +158,26 @@ class DQN:
 
     def preprocess_image(self, time_step, new_image):
         new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
+        
+        # Ensure the image is square and of size state_size x state_size
+        new_image = cv.resize(new_image, (self.state_size[0], self.state_size[1]))
+        
         if time_step == 0:
-            for _ in range(4):
-                self.cur_stacked_images.append(new_image)
-            tensor = tf.constant(self.cur_stacked_images, tf.float32)
-            tensor_transposed = tf.transpose(tensor, [1, 2, 0])
-            tensor_batch = tf.expand_dims(tensor_transposed, axis=0)
+            self.cur_stacked_images = [new_image] * 4
         else:
             self.cur_stacked_images.append(new_image)
-            tensor = tf.constant(self.cur_stacked_images, tf.float32)
-            tensor_transposed = tf.transpose(tensor, [1, 2, 0])
-            tensor_batch = tf.expand_dims(tensor_transposed, axis=0)
+            self.cur_stacked_images.pop(0)
+        
+        # Ensure all images in cur_stacked_images are square and of size state_size x state_size
+        for i, img in enumerate(self.cur_stacked_images):
+            self.cur_stacked_images[i] = cv.resize(img, (self.state_size[0], self.state_size[1]))
+        
+        tensor = tf.constant(self.cur_stacked_images, tf.float32)
+        tensor_transposed = tf.transpose(tensor, [1, 2, 0])
+        tensor_batch = tf.expand_dims(tensor_transposed, axis=0)
+        
         return tensor_batch
+    
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
         total_step = 0
@@ -202,5 +210,5 @@ class DQN:
                 if game_over:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
+                if ((total_step % self.update_target_network_period == 0) and (total_step > self.replay_start_size)):
                     self.update_target_model()
