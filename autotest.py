@@ -101,10 +101,12 @@ class Maze:
         image_num = (IMAGE_DIGITS - len(image_num)) * "0" + image_num
         fig = plt.savefig('robot_steps/' + image_num + '.jpg', bbox_inches='tight')
         # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
-        plt.close(fig)
+        # print('plt shape', fig.shape)
+        # plt.close(fig)
         image = cv.imread('robot_steps/' + image_num + '.jpg')
-        cv.imshow('Frame', image)
-        cv.waitKey(1)
+        # print('generate_img, cv2 img shape ', image.shape)
+        # cv.imshow('Frame', image)
+        # cv.waitKey(1)
         return image
     
     def deleteGifs(self):
@@ -123,6 +125,7 @@ class Maze:
         self.timestep = 0
         self.total_reward = 0
         cur_state_img = self.generate_img(time_step)
+        # print('cur_state_img shape in reset: ', cur_state_img.shape)
         return cur_state_img
 
     def move_robot(self, direction:str):
@@ -527,6 +530,8 @@ class DQN:
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale
         new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
+        # print('preprocess_img() img shape: ', new_image.shape)
+        # print('preprocess_img() time_step: ', time_step)
         # If it is the start of the game (time_step = 0), append the start configuration 4 times as initial input to the neural network model.
         if time_step == 0:
             self.cur_stacked_images.append(new_image)
@@ -584,7 +589,6 @@ class DQN:
             # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
             init_state = maze.reset(episode_step)
             state = self.preprocess_image(episode_step, init_state)
-
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(total_step)
@@ -603,12 +607,12 @@ class DQN:
                 self.remember(state, action, reward, next_state, game_over, next_state_available_actions)
                 state = next_state
                 if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
-                    print("Generating minibatch and updating main model")
+                    # print("Generating minibatch and updating main model")
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
                     # print("next_state_available_actions_batch")
                     # print(next_state_available_actions_batch)
                     loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
-                    print('Loss: ' + str(loss.numpy()))
+                    # print('Loss: ' + str(loss.numpy()))
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
@@ -617,9 +621,9 @@ class DQN:
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
                     self.episode_rewards_lst.append(episode_score)
-                    print('Game Over.')
+                    # print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                    maze.produce_video(str(episode))
+                    # maze.produce_video(str(episode))
                     # break
             if episode == 0:
                 self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
@@ -653,14 +657,18 @@ if __name__ == "__main__":
         [0.0, 1.0, 0.0, 0.0]])
     marker_filepath = "images/marker8.jpg"
     maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    network = DQN((389, 389))
+    network = DQN(state_size = (389, 389))
     # Test changing visited reward:
     for i in range(-70, -10, 5):
         lst.append(i/100)
-    for value in list:
+    for value in lst:
         visited = value
+        maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+        network = DQN(state_size = (389, 389))
         network.train_agent(maze, 35, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
         rewards = network.episode_rewards_lst
+        plt.figure(2)
+        plt.clf()
         plt.plot([i for i in range(0, len(rewards))], rewards, color='blue', linestyle='-', marker='o', label='Lines')
         plt.xlabel('Episodes')
         plt.ylabel('Rewards')
@@ -670,7 +678,9 @@ if __name__ == "__main__":
         os.makedirs(folder_path, exist_ok=True)
         # Save the plot to the folder
         plt.savefig(os.path.join(folder_path + '/' + str(run) + '.png'))
+        plt.clf()
         run +=1
+        print("Run: ", run)
 
     
     # Test changing new_step reward:
@@ -680,10 +690,12 @@ if __name__ == "__main__":
     lst = []
     for i in range(-15, -1, 1):
         lst.append(i/100)
-    for value in list:
-        visited = value
+    for value in lst:
+        new_step = value
         network.train_agent(maze, 35, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
         rewards = network.episode_rewards_lst
+        plt.figure(2)
+        plt.clf()
         plt.plot([i for i in range(0, len(rewards))], rewards, color='blue', linestyle='-', marker='o', label='Lines')
         plt.xlabel('Episodes')
         plt.ylabel('Rewards')
@@ -693,4 +705,6 @@ if __name__ == "__main__":
         os.makedirs(folder_path, exist_ok=True)
         # Save the plot to the folder
         plt.savefig(os.path.join(folder_path + '/' + str(run) + '.png'))
+        plt.clf()
         run +=1
+        print("Run: ", run)
