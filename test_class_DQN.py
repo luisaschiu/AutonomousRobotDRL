@@ -204,19 +204,17 @@ class DQN:
         """
         with tf.GradientTape() as tape:
             next_state_q = self.target_model(next_state_batch)
-            print("next_state_q")
-            print(next_state_q)
-            tf.print(next_state_q)
+            # print("next_state_q")
+            # print(next_state_q)
+            # tf.print(next_state_q)
             # Replace unavailable actions with -infinity
             masked_q_tensor = tf.where(next_state_available_actions_batch == 1, next_state_q, tf.constant(float('-inf'), shape=next_state_q.shape))
             # print(masked_qval_tensor)
             # Find largest q value within masked q tensor
             next_state_max_q = tf.math.reduce_max(masked_q_tensor, axis=1)
-            # print(largest_values)
-            # next_state_max_q = tf.math.reduce_max(next_state_q, axis=1)
-            print("next_state_max_q")
-            print(next_state_max_q)
-            tf.print(next_state_max_q)
+            # print("next_state_max_q")
+            # print(next_state_max_q)
+            # tf.print(next_state_max_q)
             # Computes the expected Q-value using the Bellman equation.
             expected_q = reward_batch + self.discount_factor * next_state_max_q * (1.0 - tf.cast(game_over_batch, tf.float32))
             # tf.reduce_sum sums up all the Q-values for each sample in the batch.

@@ -40,7 +40,9 @@ def animate(i):
     x = data['Episode']
     y = data['Reward']
     plt.cla()
-    plt.plot(x, y)
+    # plt.plot(x, y)
+    plt.plot(x, y, color='blue', linestyle='-', marker='o', label='Lines')
+
 
 def plot_thread():
     fig = plt.figure()  # Create a new figure
@@ -51,43 +53,30 @@ def data_thread():
     while True:
         generate_data()
 
+# if __name__ == "__main__":
+#     plot_thread = threading.Thread(target=plot_thread, daemon = True)
+#     plot_thread.start()
+
+#     data_thread = threading.Thread(target=data_thread, daemon = True)
+#     data_thread.start()
+
+#     while True:
+#         time.sleep(1)  # Keep the main thread running
+        
 if __name__ == "__main__":
-    plot_thread = threading.Thread(target=plot_thread)
-    plot_thread.daemon = True
-    plot_thread.start()
+    # Testing train_agent:
+    maze_array = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    marker_filepath = "images/marker8.jpg"
+    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    network = DQN((389, 389))
+    network.train_agent(maze, 35)
+    rewards = network.episode_rewards_lst
+    plt.plot([i for i in range(0, len(rewards))], rewards, color='blue', linestyle='-', marker='o', label='Lines')
+    plt.xlabel('Episodes')
+    plt.ylabel('Rewards')
+    plt.show()
 
-    data_thread = threading.Thread(target=data_thread)
-    data_thread.daemon = True
-    data_thread.start()
-
-    while True:
-        time.sleep(1)  # Keep the main thread running
-# # Test animated plot for real time data plotting
-# plt.style.use('fast')
-
-# x_val = []
-# y_val = []
-
-# # By default, counts up 1 number at a time, and each time, we get the next value.
-# index = count()
-
-
-
-
-# #Run animate function every 1 second
-# ani = FuncAnimation(fig = plt.gcf(), func = animate, event_source=None)
-
-# plt.show()  # Show the plot and animation
-# plt.close()
-
-
-# Testing train_agent:
-# maze_array = np.array(
-# [[0.0, 1.0, 1.0, 0.0],
-# [0.0, 0.0, 0.0, 0.0],
-# [1.0, 1.0, 0.0, 1.0],
-# [0.0, 1.0, 0.0, 0.0]])
-# marker_filepath = "images/marker8.jpg"
-# maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-# network = DQN((389, 389))
-# network.train_agent(maze, 25)
