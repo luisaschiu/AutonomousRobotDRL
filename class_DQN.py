@@ -7,6 +7,7 @@ from tensorflow.keras import initializers, models, optimizers, metrics, losses
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 import cv2 as cv
 import itertools
+import csv
 
 class DQN:
     def __init__(self, state_size):
@@ -66,11 +67,11 @@ class DQN:
         else:
             array=self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
-            print(array)
+            # print(array)
             masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
-            print(masked_qval_array)
+            # print(masked_qval_array)
             max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
-            print(max_val_index)
+            # print(max_val_index)
             return actions_list[max_val_index]
         
     def remember(self, state, action, reward, next_state, game_over, next_state_available_action):
@@ -246,7 +247,10 @@ class DQN:
             tensor_batch = tf.expand_dims(tensor_transposed, axis=0)  # Adding batch dimension
         return tensor_batch
 
-    def train_agent(self, maze: Maze, num_episodes = 1e7):
+
+
+    def train_agent(self, maze: Maze, num_episodes = 100):
+        episode_rewards_lst = []
         loss = 0
         total_step = 0
         maze.deleteGifs()
@@ -290,6 +294,7 @@ class DQN:
                     self.update_target_model()
                 # From Google article pseudocode line 10: if episode terminates at step j+1
                 if game_over:
+                    episode_rewards_lst.append(episode_score)
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     maze.produce_video(str(episode))
