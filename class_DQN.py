@@ -24,7 +24,7 @@ class DQN:
         self.epsilon_end = 0.05
         self.final_exploration_frame = size**2
         self.learning_rate = 1e-4
-        self.minibatch_size = 10
+        self.minibatch_size = 32
         self.max_steps_per_episode = size**2
         self.win_history = []
         self.agent_history_length = 4
