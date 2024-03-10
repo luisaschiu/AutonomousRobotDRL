@@ -30,7 +30,7 @@ class DQN:
         self.agent_history_length = 4
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_period = 10
+        self.update_target_network_period = 1000
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         self.target_model.set_weights(self.model.get_weights())
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-8)
@@ -112,7 +112,7 @@ class DQN:
         self.loss_metric.update_state(loss_val)
         self.Q_value_metric.update_state(main_q)
 
-        return loss_val
+        return loss_val,main_q
 
     def generate_minibatch_samples(self):
         start_time = time.time()
@@ -192,10 +192,10 @@ class DQN:
                     print("Generating minibatch and updating main model")
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
                     start_time = time.time()
-                    loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    loss,main_q = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
                     end_time = time.time()
                     print(f"Execution time of the function updata_main_model() is {end_time - start_time} seconds")
-                    print(f"Loss = {np.mean(loss)}\n")
+                    print(f"Loss = {np.mean(loss)}\n Q Value = {np.mean(main_q)}\n")
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                     maze.num_traversed =0
