@@ -69,7 +69,6 @@ class Maze:
         cv.imwrite(directory + str(time_step) + '.jpg', image)
         cv.imshow('Frame', image)
         cv.waitKey(1)
-        # print(image.shape)
         return image
 
             
@@ -202,21 +201,14 @@ class Maze:
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
             self.num_traversed = 0
             return 1
-        # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
             self.num_traversed = self.num_traversed + 1
             return -0.04 * self.num_traversed
         else:
-            # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             return -0.04
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
-        # TODO: Get rid of this, account for maximum time steps allowed in class DQN
-        # If rewards value is less than the minimum rewards allowed
-        # if self.total_reward < self.min_reward:
-        #     return True
-        # If goal is reached
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
             return True
         return False

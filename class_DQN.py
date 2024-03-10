@@ -22,15 +22,15 @@ class DQN:
         self.gamma = 0.99
         self.epsilon_start = 0.9
         self.epsilon_end = 0.05
-        self.final_exploration_frame = size**2
+        self.final_exploration_frame = size ** 3
         self.learning_rate = 1e-4
         self.minibatch_size = 32
-        self.max_steps_per_episode = size**2
+        self.max_steps_per_episode = size ** 3
         self.win_history = []
         self.agent_history_length = 4
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_period = 1000
+        self.update_target_network_period = 100
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         self.target_model.set_weights(self.model.get_weights())
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-8)
@@ -50,13 +50,18 @@ class DQN:
         return model
 
     def get_action(self, state, available_actions, expl_rate):
+        print(f"Explore Rate = {expl_rate}")
         actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
+            print("random")
             valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
             return random.choice(valid_actions)
         else:
+            print("decided")
             array=self.model.predict(state)
             masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
+            print((np.array(unique_actions),masked_qval_array) )
+            # time.sleep(2)
             max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
             return actions_list[max_val_index]
         
@@ -112,7 +117,10 @@ class DQN:
         self.loss_metric.update_state(loss_val)
         self.Q_value_metric.update_state(main_q)
 
-        return loss_val,main_q
+
+        avg_loss = tf.math.reduce_mean(loss_val)
+        avg_qval = tf.math.reduce_mean(main_q)
+        return avg_loss,avg_qval
 
     def generate_minibatch_samples(self):
         start_time = time.time()
@@ -177,6 +185,7 @@ class DQN:
             state = self.preprocess_image(episode_step, init_state)
 
             while not game_over:
+                print(f"MOVE {total_step}")
                 expl_rate = self.get_eps(total_step)
                 available_actions = maze.get_available_actions()
                 action = self.get_action(state, available_actions, expl_rate)
@@ -195,7 +204,7 @@ class DQN:
                     loss,main_q = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
                     end_time = time.time()
                     print(f"Execution time of the function updata_main_model() is {end_time - start_time} seconds")
-                    print(f"Loss = {np.mean(loss)}\n Q Value = {np.mean(main_q)}\n")
+                    print(f"Loss = {loss}\n Q Value = {main_q}\n")
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                     maze.num_traversed =0
