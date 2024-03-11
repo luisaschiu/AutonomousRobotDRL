@@ -7,6 +7,7 @@ import random
 from matplotlib.animation import FuncAnimation
 import csv
 import pandas as pd
+import os
 import threading
 import time
 
@@ -64,19 +65,28 @@ def data_thread():
 #         time.sleep(1)  # Keep the main thread running
         
 if __name__ == "__main__":
+    run = 0
+    folder_path = 'autotest_results'
+    value_lst = [0.3, 0.5, 0.6, 0.8, 0.10]
+    for value in value_lst:
+        if os.path.isfile(folder_path + '/' + str(run) + '.png'):
+            run += 1
+            continue
+        print(value)
+    
     # Testing train_agent:
-    maze_array = np.array(
-    [[0.0, 1.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0],
-    [1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 0.0]])
-    marker_filepath = "images/marker8.jpg"
-    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    network = DQN((389, 389))
-    network.train_agent(maze, 35)
-    rewards = network.episode_rewards_lst
-    plt.plot([i for i in range(0, len(rewards))], rewards, color='blue', linestyle='-', marker='o', label='Lines')
-    plt.xlabel('Episodes')
-    plt.ylabel('Rewards')
-    plt.show()
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # marker_filepath = "images/marker8.jpg"
+    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # network = DQN((389, 389))
+    # network.train_agent(maze, 35)
+    # rewards = network.episode_rewards_lst
+    # plt.plot([i for i in range(0, len(rewards))], rewards, color='blue', linestyle='-', marker='o', label='Lines')
+    # plt.xlabel('Episodes')
+    # plt.ylabel('Rewards')
+    # plt.show()
 

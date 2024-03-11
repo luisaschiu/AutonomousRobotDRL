@@ -336,6 +336,7 @@ class DQN:
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
         self.episode_rewards_lst = []
+        self.action_choice = []
 
     # Method with normalizing image
     def build_model(self):
@@ -659,9 +660,13 @@ if __name__ == "__main__":
     maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
     network = DQN(state_size = (389, 389))
     # Test changing visited reward:
+    folder_path = 'autotest_results'
     for i in range(-70, -10, 5):
         lst.append(i/100)
     for value in lst:
+        if os.path.isfile(folder_path + '/' + str(run) + '.png'):
+            run += 1
+            continue
         visited = value
         maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
         network = DQN(state_size = (389, 389))
@@ -673,7 +678,6 @@ if __name__ == "__main__":
         plt.xlabel('Episodes')
         plt.ylabel('Rewards')
         plt.title('REWARDS: goal = ' + str(goal) + ', visited = ' + str(visited) + ', new_step = ' + str(new_step))
-        folder_path = 'autotest_results'
         # Create the folder if it doesn't exist
         os.makedirs(folder_path, exist_ok=True)
         # Save the plot to the folder
