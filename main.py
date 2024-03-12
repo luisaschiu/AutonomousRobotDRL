@@ -65,28 +65,50 @@ def data_thread():
 #         time.sleep(1)  # Keep the main thread running
         
 if __name__ == "__main__":
-    run = 0
-    folder_path = 'autotest_results'
-    value_lst = [0.3, 0.5, 0.6, 0.8, 0.10]
-    for value in value_lst:
-        if os.path.isfile(folder_path + '/' + str(run) + '.png'):
-            run += 1
-            continue
-        print(value)
-    
     # Testing train_agent:
-    # maze_array = np.array(
-    # [[0.0, 1.0, 1.0, 0.0],
-    # [0.0, 0.0, 0.0, 0.0],
-    # [1.0, 1.0, 0.0, 1.0],
-    # [0.0, 1.0, 0.0, 0.0]])
-    # marker_filepath = "images/marker8.jpg"
-    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    # network = DQN((389, 389))
-    # network.train_agent(maze, 35)
-    # rewards = network.episode_rewards_lst
-    # plt.plot([i for i in range(0, len(rewards))], rewards, color='blue', linestyle='-', marker='o', label='Lines')
-    # plt.xlabel('Episodes')
-    # plt.ylabel('Rewards')
-    # plt.show()
+    maze_array = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    marker_filepath = "images/marker8.jpg"
+    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    network = DQN((389, 389))
+    network.train_agent(maze, 100)
+    rewards_lst = network.episode_rewards_lst
+    total_step_loss_lst = network.total_step_loss_lst
+    loss_lst = network.loss_lst
+    expl_rate_lst = network.expl_rate_lst
+    
 
+    data_folder_path = 'data_plots'
+    os.makedirs(data_folder_path, exist_ok = True)
+    # plt.clf()
+    plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst, color='blue', linestyle='-', marker='o', label='Lines')
+    plt.xlabel('Episodes')
+    plt.ylabel('Rewards')
+    plt.savefig(os.path.join(data_folder_path + '/rewards.png'))
+    plt.clf()
+
+    plt.plot(total_step_loss_lst, loss_lst, color='blue', linestyle='-', marker='o', label='Lines')
+    plt.xlabel('Steps')
+    plt.ylabel('Loss')
+    plt.savefig(os.path.join(data_folder_path + '/loss.png'))
+    plt.clf()
+
+    plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst, color='blue', linestyle='-', marker='o', label='Lines')
+    plt.xlabel('Steps')
+    plt.ylabel('Expl_rate')
+    plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
+    plt.clf()
+
+    # Testing for autotest.py
+    # run = 0
+    # folder_path = 'autotest_results'
+    # value_lst = [0.3, 0.5, 0.6, 0.8, 0.10]
+    # for value in value_lst:
+    #     if os.path.isfile(folder_path + '/' + str(run) + '.png'):
+    #         run += 1
+    #         continue
+    #     print(value)
+    

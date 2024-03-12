@@ -21,12 +21,12 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 8
+        self.replay_start_size = 70
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  This performed better than the past
-        self.final_exploration_frame = 40
+        self.final_exploration_frame = 1000
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
@@ -43,6 +43,9 @@ class DQN:
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
         self.episode_rewards_lst = []
+        self.loss_lst = []
+        self.total_step_loss_lst = []
+        self.expl_rate_lst = []
 
     # Method with normalizing image
     def build_model(self):
@@ -298,6 +301,7 @@ class DQN:
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(total_step)
+                self.expl_rate_lst.append(expl_rate)
                 available_actions = maze.get_available_actions()
                 action = self.get_action(state, available_actions, expl_rate)
                 total_step += 1
@@ -318,7 +322,9 @@ class DQN:
                     # print("next_state_available_actions_batch")
                     # print(next_state_available_actions_batch)
                     loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
-                    print('Loss: ' + str(loss.numpy()))
+                    self.total_step_loss_lst.append(total_step)
+                    self.loss_lst.append(loss.numpy())
+                    # print('Loss: ' + str(loss.numpy()))
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q

@@ -248,7 +248,7 @@ class Maze:
             return 1
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.25
+            return -0.07
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             return -0.04
