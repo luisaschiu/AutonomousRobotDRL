@@ -239,7 +239,7 @@ class DQN:
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale
         new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
-        
+        new_image = cv.resize(new_image, (120, 120))
         # If it is the start of the game (time_step = 0), append the start configuration 4 times as initial input to the neural network model.
         if time_step == 0:
             self.cur_stacked_images.append(new_image)
