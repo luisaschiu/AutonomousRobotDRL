@@ -17,6 +17,9 @@ if __name__ == "__main__":
     # If you are continuing a test of the same batch of varying parameters, just run this program and it will leave the existing images alone.
     
     ''' Test varying rewards'''
+    # replay_start_size = 16
+    # final_exploration_frame = 1000
+    # max_num_per_episode = 20
     # goal = 10
     # visited = -0.6
     # new_step = -0.3
@@ -38,7 +41,7 @@ if __name__ == "__main__":
     #         continue
     #     new_step = value
     #     maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (3,3), 180)
-    #     network = DQN_AUTO(state_size = (120, 120), replay_start_size=16, final_exploration_frame=1000)
+        # network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame, max_steps_per_episode = max_steps_per_episode)
     #     network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
     #     rewards_lst = network.episode_rewards_lst
     #     total_step_loss_lst = network.total_step_loss_lst
