@@ -14,19 +14,19 @@ import pandas as pd
 import threading
 
 class DQN_AUTO:
-    def __init__(self, state_size):
+    def __init__(self, state_size, replay_start_size, final_exploration_frame):
         # State size is the image size
         self.state_size = state_size
         self.action_size = 4
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 16
+        self.replay_start_size = replay_start_size
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  This performed better than the past
-        self.final_exploration_frame = 1000
+        self.final_exploration_frame = final_exploration_frame
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
