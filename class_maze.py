@@ -248,10 +248,10 @@ class Maze:
             return 10
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.4
+            return -0.6
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -0.04
+            return -0.4
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
