@@ -58,18 +58,11 @@ class Maze:
         
         # Read the image and ensure it is square
         image = cv.imread(directory + str(time_step) + '.jpg')
-        if self.init_shape is None:
-            height, width = image.shape[:2]
-            if height != width:
-                size = min(height, width)
-                image = cv.resize(image, (size, size))
-        else:
-            image = cv.resize(image, (self.init_shape[1], self.init_shape[0]))
         
         cv.imwrite(directory + str(time_step) + '.jpg', image)
         cv.imshow('Frame', image)
         cv.waitKey(1)
-        return image
+        return cv.resize(image, (64,64))
 
             
 
@@ -197,16 +190,13 @@ class Maze:
 
     def get_reward(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
-        # Robot reached the goal
+        reward = -0.05
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-            self.num_traversed = 0
-            return 1
+            reward = 1
         if (robot_x, robot_y) in self.traversed:
-            self.num_traversed = self.num_traversed + 1
-            return -0.04 * self.num_traversed
-        else:
-            return -0.04
-    
+            reward = -0.2 * self.traversed.count((robot_x, robot_y))
+        return reward
+
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
@@ -216,7 +206,6 @@ class Maze:
     def take_action(self, action: str, time_step):
         self.move_robot(action)
         self.total_reward += self.get_reward()
-        print(self.total_reward)
         return (self.generate_img(time_step), self.get_reward(), self.game_over())
 
     def produce_video():

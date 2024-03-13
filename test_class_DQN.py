@@ -24,24 +24,4 @@ if __name__ == "__main__":
     maze = Maze(maze_array, marker_filepath, goal_filepath, start, goal, 180, hidden_goal=True)
     init_state = maze.reset(0)
     network = DQN((init_state.shape), len(maze_array[0]))
-    history = network.train_agent(maze,20)
-
-    # Unpack the tuples into two lists
-    episodes, scores = zip(*history)
-
-    plt.figure(figsize=(10, 6))
-    plt.plot(episodes, scores)
-    plt.xlabel('Episodes')
-    plt.ylabel('Scores')
-    plt.title('Episode Scores Over Time')
-    plt.grid(True)
-
-    # Create the directory if it doesn't exist
-    if not os.path.exists('results'):
-        os.makedirs('results')
-
-    # Save the figure to the directory
-    plt.savefig('results/episode_scores.png')
-
-    # Close the plot
-    plt.close()
+    network.train_agent(maze,100)

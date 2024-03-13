@@ -8,6 +8,8 @@ from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
 import cv2 as cv
 import itertools
 import time
+import matplotlib.pyplot as plt
+import os
 
 # Pre-compute unique_actions
 unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])
@@ -18,11 +20,11 @@ class DQN:
         self.action_size = 4
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = size * 2
+        self.replay_start_size = size ** 2
         self.gamma = 0.99
-        self.epsilon_start = 0.9
-        self.epsilon_end = 0.05
-        self.final_exploration_frame = size ** 3
+        self.epsilon_start = 1.0
+        self.epsilon_end = 0.1
+        self.final_exploration_frame = (size ** 3) * 5
         self.learning_rate = 1e-4
         self.minibatch_size = 32
         self.max_steps_per_episode = size ** 3
@@ -30,14 +32,15 @@ class DQN:
         self.agent_history_length = 4
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_period = 100
+        self.update_target_network_period = ((size+1) ** 2)
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         self.target_model.set_weights(self.model.get_weights())
-        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-8)
+        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
 
     def build_model(self):
+        print(self.state_size)
         input_layer = Input(shape = (self.state_size[0], self.state_size[1], self.agent_history_length), batch_size=self.minibatch_size)
         normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
@@ -49,19 +52,15 @@ class DQN:
         model = models.Model(inputs=input_layer, outputs=output_layer)
         return model
 
+
     def get_action(self, state, available_actions, expl_rate):
-        print(f"Explore Rate = {expl_rate}")
         actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
-            print("random")
             valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
             return random.choice(valid_actions)
         else:
-            print("decided")
-            array=self.model.predict(state)
+            array=self.model.predict(state, verbose=False)
             masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
-            print((np.array(unique_actions),masked_qval_array) )
-            # time.sleep(2)
             max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
             return actions_list[max_val_index]
         
@@ -123,7 +122,6 @@ class DQN:
         return avg_loss,avg_qval
 
     def generate_minibatch_samples(self):
-        start_time = time.time()
         indices_lst = np.zeros(self.minibatch_size, dtype=np.int32)
         cur_memory_size = len(self.replay_memory)
         count = 0
@@ -145,8 +143,6 @@ class DQN:
 
         concatenated_state_tensor = tf.concat(state_batch, axis=0)
         concatenated_next_state_tensor = tf.concat(next_state_batch, axis=0)
-        end_time = time.time()
-        print(f"Execution time of generate_minibatch_samples() is {end_time - start_time} seconds")
         return concatenated_state_tensor, tf.stack(action_batch, axis=0), tf.stack(reward_batch, axis=0), concatenated_next_state_tensor, tf.stack(game_over_batch, axis=0), tf.stack(next_state_available_actions_batch, axis=0)
 
 
@@ -175,45 +171,78 @@ class DQN:
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
         total_step = 0
-        scores=[]
+        scores = np.zeros(num_episodes)
+
         for episode in range(num_episodes):
+            start_time = time.time()
             self.cur_stacked_images.clear()
             episode_step = 0
             episode_score = 0.0
             game_over = False
             init_state = maze.reset(episode_step)
             state = self.preprocess_image(episode_step, init_state)
+            episode_losses = np.zeros(self.max_steps_per_episode+1)
+            episode_q_vals = np.zeros(self.max_steps_per_episode+1)
 
             while not game_over:
-                print(f"MOVE {total_step}")
-                expl_rate = self.get_eps(total_step)
-                available_actions = maze.get_available_actions()
-                action = self.get_action(state, available_actions, expl_rate)
+                action = self.get_action(state, maze.get_available_actions(), self.get_eps(total_step, self.epsilon_end))
                 total_step += 1
                 episode_step += 1
                 (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
-                next_state_available_actions = maze.get_available_actions()
                 next_state = self.preprocess_image(episode_step, next_state_img)
-                self.remember(state, action, reward, next_state, game_over, next_state_available_actions)
+                self.remember(state, action, reward, next_state, game_over, maze.get_available_actions())
                 state = next_state
                 if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
-                    print("Generating minibatch and updating main model")
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
-                    start_time = time.time()
-                    loss,main_q = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
-                    end_time = time.time()
-                    print(f"Execution time of the function updata_main_model() is {end_time - start_time} seconds")
-                    print(f"Loss = {loss}\n Q Value = {main_q}\n")
+                    loss, q_val = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    episode_q_vals[episode_step] = q_val
+                    episode_losses[episode_step] = loss
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                     maze.num_traversed =0
                 if game_over:
+                    stop_time = time.time()
+                    elapsed_time = stop_time - start_time
                     print('Game Over.')
-                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                    scores.append((episode,episode_score))
+                    print(f'Time: {elapsed_time:.2f} s, Episode Num: {str(episode)}, Episode Rewards: {str(episode_score)}, Num Steps Taken: {str(episode_step)}')
+                    scores[episode] = episode_score
+                    plt.figure(figsize=(10, 6))
+
+                    # Create an array of indices for the x-axis
+                    indices = np.arange(episode_step)
+
+                    # Create a bar for Q Value
+                    plt.bar(indices, episode_q_vals[:episode_step], label='Q Value')
+
+                    # Create a bar for Loss, offset by 0.4 units on the x-axis
+                    plt.bar(indices + 0.4, episode_losses[:episode_step], label='Loss', width=0.4)
+
+                    #Q_val & Loss Graph
+                    plt.xlabel('Steps')
+                    plt.ylabel('Loss & Q Value')
+                    plt.title('Episode Metrics Over Time')
+                    plt.grid(True)
+                    plt.legend()
+                    if not os.path.exists('results/episode_scores'):
+                        os.makedirs('results/episode_scores')
+                    plt.savefig(f'results/episode_scores/episode_{episode}.png')
+                    plt.close()
+
+                    #Reward Graph
+                    plt.figure(figsize=(10, 6))
+                    plt.plot(np.arange(episode+1), scores[:episode+1])
+                    plt.xlabel('Episodes')
+                    plt.ylabel('Scores')
+                    plt.title('Episode Scores Over Time')
+                    plt.grid(True)
+                
+                    if not os.path.exists('results'):
+                        os.makedirs('results')
+                    plt.savefig('results/episode_scores.png')
+                    plt.close()
                 if ((total_step % self.update_target_network_period == 0) and (total_step > self.replay_start_size)):
                     self.update_target_model()
-            
-        return scores
+
+
                 
