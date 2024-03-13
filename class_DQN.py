@@ -21,7 +21,7 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 32
+        self.replay_start_size = 16
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
