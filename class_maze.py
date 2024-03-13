@@ -282,6 +282,7 @@ class Maze:
         GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
         frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
         frame_one = frames[0]
+        os.makedirs('gifs', exist_ok = True)
         gif_name = "gifs/" + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
