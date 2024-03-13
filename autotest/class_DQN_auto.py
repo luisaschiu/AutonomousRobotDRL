@@ -14,7 +14,7 @@ import pandas as pd
 import threading
 
 class DQN_AUTO:
-    def __init__(self, state_size, replay_start_size, final_exploration_frame):
+    def __init__(self, state_size, replay_start_size, final_exploration_frame, max_steps_per_episode):
         # State size is the image size
         self.state_size = state_size
         self.action_size = 4
@@ -29,7 +29,7 @@ class DQN_AUTO:
         self.final_exploration_frame = final_exploration_frame
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = 20 # TODO: Chosen arbitrarily right now, make sure you change this as needed
+        self.max_steps_per_episode = max_steps_per_episode # TODO: Chosen arbitrarily right now, make sure you change this as needed
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()

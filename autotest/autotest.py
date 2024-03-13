@@ -19,7 +19,7 @@ if __name__ == "__main__":
     ''' Test varying rewards'''
     # goal = 10
     # visited = -0.6
-    # new_step = -0.03
+    # new_step = -0.3
     # run = 0
     # lst = []
     # maze_array = np.array(
@@ -81,6 +81,7 @@ if __name__ == "__main__":
     # NOTE: You have to still set the goal, visited, new_step rewards similar to the code functionality above
     replay_start_size = 16
     final_exploration_frame = 1000
+    max_num_per_episode = 20
 
     goal = 10
     visited = -0.6
@@ -96,18 +97,18 @@ if __name__ == "__main__":
     # Test changing new_step reward:
     folder_path = 'autotest_results'
     # This is where you vary the parameter:
-    for i in range(10, 200, 10):
+    for i in range(16, 80, 4):
         lst.append(i)
     for value in lst:
         if os.path.isfile(folder_path + 'expl_rate_/' + str(run) + '.png'):
             run += 1
             continue
         # Assign changing/varying parameter in the line below
-        replay_start_size = value
+        max_steps_per_episode = value
 
         maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (3,3), 180)
-        network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame)
-        network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
+        network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame, max_steps_per_episode = max_steps_per_episode)
+        network.train_agent(maze, 3, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
         rewards_lst = network.episode_rewards_lst
         total_step_loss_lst = network.total_step_loss_lst
         loss_lst = network.loss_lst
@@ -117,7 +118,7 @@ if __name__ == "__main__":
         plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst, color='blue', linestyle='-', marker='o', label='Lines')
         plt.xlabel('Episodes')
         plt.ylabel('Rewards')
-        plt.title('EXPLORATION: replay_start_size = ' + str(replay_start_size) + ', final_expl_frame = ' + str(final_exploration_frame))
+        plt.title('EXPLORATION: replay_start_size = ' + str(replay_start_size) + ', final_expl_frame = ' + str(final_exploration_frame) + ',\n' + 'max_steps_per_episode = ' + str(max_steps_per_episode))
         # Create the folder if it doesn't exist
         os.makedirs(folder_path, exist_ok=True)
         # Save the plot to the folder
@@ -128,7 +129,7 @@ if __name__ == "__main__":
         plt.plot(total_step_loss_lst, loss_lst, color='blue', linestyle='-', marker='o', label='Lines')
         plt.xlabel('steps')
         plt.ylabel('loss')
-        plt.title('EXPLORATION: replay_start_size = ' + str(replay_start_size) + ', final_expl_frame = ' + str(final_exploration_frame))
+        plt.title('EXPLORATION: replay_start_size = ' + str(replay_start_size) + ', final_expl_frame = ' + str(final_exploration_frame) + ',\n' + 'max_steps_per_episode = ' + str(max_steps_per_episode))
         # Save the plot to the folder
         plt.savefig(os.path.join(folder_path + '/' + 'loss_' + str(run) + '.png'))
         plt.clf()
@@ -137,7 +138,7 @@ if __name__ == "__main__":
         plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst, color='blue', linestyle='-', marker='o', label='Lines')
         plt.xlabel('steps')
         plt.ylabel('exploration rate')
-        plt.title('EXPLORATION: replay_start_size = ' + str(replay_start_size) + ', final_expl_frame = ' + str(final_exploration_frame))
+        plt.title('EXPLORATION: replay_start_size = ' + str(replay_start_size) + ', final_expl_frame = ' + str(final_exploration_frame) + ',\n' + 'max_steps_per_episode = ' + str(max_steps_per_episode))
         # Save the plot to the folder
         plt.savefig(os.path.join(folder_path + '/' + 'expl_rate_' + str(run) + '.png'))
         plt.clf()
