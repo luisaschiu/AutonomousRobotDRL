@@ -1,5 +1,8 @@
 /robot_steps
 /gifs
 /data.csv
-/autotest_results
 /data_plots
+/autotest/autotest_results
+/autotest/robot_steps
+/autotest/gifts
+/autotest/data.csv

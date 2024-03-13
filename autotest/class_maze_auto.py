@@ -8,7 +8,7 @@ import os
 import glob
 from PIL import Image
 
-class Maze:
+class Maze_AUTO:
     def __init__(self, maze:np.array, marker_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int):
         self.init_maze = np.copy(maze)
         self.maze = maze
@@ -88,8 +88,10 @@ class Maze:
         image_num = (IMAGE_DIGITS - len(image_num)) * "0" + image_num
         fig = plt.savefig('robot_steps/' + image_num + '.jpg', bbox_inches='tight')
         # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
+        # print('plt shape', fig.shape)
         plt.close(fig)
         image = cv.imread('robot_steps/' + image_num + '.jpg')
+        # print('generate_img, cv2 img shape ', image.shape)
         cv.imshow('Frame', image)
         cv.waitKey(1)
         return image
@@ -110,6 +112,7 @@ class Maze:
         self.timestep = 0
         self.total_reward = 0
         cur_state_img = self.generate_img(time_step)
+        # print('cur_state_img shape in reset: ', cur_state_img.shape)
         return cur_state_img
 
     def move_robot(self, direction:str):
@@ -237,19 +240,19 @@ class Maze:
             raise ActionError("No actions available. Robot cannot move!")
         return valid_actions
 
-    def get_reward(self):
+    def get_reward(self, goal_rwd, visited_rwd, new_step_rwd):
         # TODO: Look into penalty reward for traversed locations and advancing to new spot (maybe swap or alter)
         # NOTE: Do I account for maze edges or walls here?
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # Robot reached the goal
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
-            return 10
+            return goal_rwd
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.6
+            return visited_rwd
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -0.4
+            return new_step_rwd
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -268,9 +271,9 @@ class Maze:
         #     return 'win'
         # return 'not over'
 
-    def take_action(self, action: str, time_step):
+    def take_action(self, action: str, time_step, goal_rwd, visited_rwd, new_step_rwd):
         self.move_robot(action)
-        reward = self.get_reward()
+        reward = self.get_reward(goal_rwd, visited_rwd, new_step_rwd)
         self.total_reward += reward
         game_over = self.game_over()
         # self.time_step += 1
