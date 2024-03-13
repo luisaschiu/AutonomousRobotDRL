@@ -108,7 +108,7 @@ if __name__ == "__main__":
 
         maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (3,3), 180)
         network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame, max_steps_per_episode = max_steps_per_episode)
-        network.train_agent(maze, 3, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
+        network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
         rewards_lst = network.episode_rewards_lst
         total_step_loss_lst = network.total_step_loss_lst
         loss_lst = network.loss_lst
