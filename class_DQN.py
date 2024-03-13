@@ -21,7 +21,7 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 70
+        self.replay_start_size = 16
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
@@ -34,7 +34,7 @@ class DQN:
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_freq = 12
+        self.update_target_network_freq = 24
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
@@ -80,7 +80,6 @@ class DQN:
             masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
             # print(masked_qval_array)
             max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
-            # print(max_val_index)
             return actions_list[max_val_index]
         
     def remember(self, state, action, reward, next_state, game_over, next_state_available_action):
@@ -240,6 +239,7 @@ class DQN:
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale
         new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
+        
         # If it is the start of the game (time_step = 0), append the start configuration 4 times as initial input to the neural network model.
         if time_step == 0:
             self.cur_stacked_images.append(new_image)
