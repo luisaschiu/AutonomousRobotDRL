@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import ArUco_functions
 import os
 import glob
 
@@ -248,7 +247,7 @@ class Maze:
             return 10
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.6
+            return -0.7
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             return -0.4

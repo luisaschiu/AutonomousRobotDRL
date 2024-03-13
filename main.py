@@ -73,7 +73,7 @@ if __name__ == "__main__":
     [0.0, 1.0, 0.0, 0.0]])
     marker_filepath = "images/marker8.jpg"
     maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
-    network = DQN((389, 389))
+    network = DQN((120, 120))
     network.train_agent(maze, 100)
     rewards_lst = network.episode_rewards_lst
     total_step_loss_lst = network.total_step_loss_lst
