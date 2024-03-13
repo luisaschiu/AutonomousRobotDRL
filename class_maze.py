@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from matplotlib.transforms import Bbox
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
-import ArUco_functions
 import os
 import glob
 
