@@ -249,14 +249,14 @@ class Maze:
             return -0.6
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -0.4
+            return -0.3
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # TODO: Get rid of this, account for maximum time steps allowed in class DQN
         # If rewards value is less than the minimum rewards allowed
-        if self.total_reward < self.min_reward:
-            return True
+        # if self.total_reward < self.min_reward:
+        #     return True
         # If goal is reached
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
             return True
