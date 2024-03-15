@@ -4,7 +4,7 @@ from collections import deque
 import random
 from class_maze import Maze
 from tensorflow.keras import initializers, models, optimizers, metrics, losses
-from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
+from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input, Rescaling
 import cv2 as cv
 import itertools
 
@@ -45,7 +45,8 @@ class DQN:
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
         input_layer = Input(shape = (self.state_size[0], self.state_size[1], self.agent_history_length), batch_size=self.minibatch_size)
         # input_layer = Input(shape = (389, 398, 4))
-        normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+        normalized_input = Rescaling(scale=1.0/255.0)(input_layer)
+        # normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
         conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv1)
         conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv2)
@@ -245,11 +246,35 @@ class DQN:
         return mean.numpy()
 
 if __name__ == "__main__":
-    pass
-    # Test finding mean of tensor:
-    # test_tensor = tf.constant([0.1, 0.4, 0.6, 0.8, 0.3689], tf.float32)
-    # mean = tf.math.reduce_mean(test_tensor)
-    # print(mean.numpy())
+    # pass
+    # Initial parameters: create maze
+    # Testing one run of the train_agent code:
+    maze_array = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    marker_filepath = "images/marker8.jpg"
+    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    network = DQN((389, 389))
+    model = network.build_model()
+    next_state_batch = []
+    total_step = 0
+    episode_step = 0
+    episode_score = 0
+    init_state = maze.reset(episode_step)
+    state = network.preprocess_image(episode_step, init_state)
+   
+    # Test lambda layer normalizing the input layer in build_model()
+    print("Before normalizing, input data:")
+    print(state)
+    input_layer = Input(shape = (389, 389, 4), batch_size=32)
+    normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+    temp_model = models.Model(inputs=input_layer, outputs=normalized_input)
+    lambda_output = temp_model.predict(state)
+    print("After normalizing, output data:")
+    print(lambda_output)
+
 
     # # Initial parameters: create maze
     # # Testing one run of the train_agent code:
@@ -307,6 +332,12 @@ if __name__ == "__main__":
     #     if ((total_step % network.update_target_network_freq == 0) and (total_step > network.replay_start_size)):
     #         network.update_target_model()
     #     print("ep step: ", episode_step)
+
+
+    # Test finding mean of tensor:
+    # test_tensor = tf.constant([0.1, 0.4, 0.6, 0.8, 0.3689], tf.float32)
+    # mean = tf.math.reduce_mean(test_tensor)
+    # print(mean.numpy())
 
 
     # # Test get_action() logic:

@@ -4,7 +4,7 @@ from collections import deque
 import random
 from class_maze import Maze
 from tensorflow.keras import initializers, models, optimizers, metrics, losses
-from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
+from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input, Rescaling
 import cv2 as cv
 import itertools
 import csv
@@ -50,7 +50,6 @@ class DQN:
 
     def normalize_image_pixels(x):
         return x/255.0
-        
     # Method with normalizing image
     def build_model(self):
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
@@ -58,7 +57,9 @@ class DQN:
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
         input_layer = Input(shape = (self.state_size[0], self.state_size[1], self.agent_history_length), batch_size=self.minibatch_size)
         # input_layer = Input(shape = (389, 398, 4))
-        normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+        # normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+        normalized_input = Rescaling(scale=1.0/255.0)(input_layer)
+        print(normalized_input)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
         conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv1)
         conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv2)
@@ -410,6 +411,9 @@ class DQN:
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
                 next_state = self.preprocess_image(episode_step, next_state_img)
                 state = next_state
+                if episode_step == self.max_steps_per_episode:
+                    game_over = True
+                    print("LOSE")
                 if game_over:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
