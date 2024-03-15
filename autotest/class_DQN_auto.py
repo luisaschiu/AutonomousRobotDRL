@@ -4,7 +4,7 @@ from collections import deque
 import random
 from class_maze_auto import Maze_AUTO
 from tensorflow.keras import initializers, models, optimizers, metrics, losses
-from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input
+from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input, Rescaling
 import cv2 as cv
 import itertools
 import csv
@@ -42,6 +42,7 @@ class DQN_AUTO:
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
+        self.actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         self.episode_rewards_lst = []
         self.loss_lst = []
         self.total_step_loss_lst = []
@@ -54,7 +55,7 @@ class DQN_AUTO:
         # init = layers.initializers.RandomNormal(mean=0.0, stddev=0.1)  # Adjust mean and stddev as needed
         input_layer = Input(shape = (self.state_size[0], self.state_size[1], self.agent_history_length), batch_size=self.minibatch_size)
         # input_layer = Input(shape = (389, 398, 4))
-        normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+        normalized_input = Rescaling(scale=1.0/255.0)(input_layer)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
         conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv1)
         conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv2)
@@ -285,7 +286,7 @@ class DQN_AUTO:
     #     ani = FuncAnimation(fig, self.animate())  # Create the animation
     #     plt.show()  # Show the plot and animation
 
-    def train_agent(self, maze: Maze_AUTO, num_episodes, goal_rwd, visited_rwd, new_step_rwd):
+    def train_agent(self, maze: Maze_AUTO, num_episodes, goal_rwd, visited_rwd, new_step_rwd, save_weights_dir):
         loss = 0
         total_step = 0
         maze.deleteGifs()
@@ -335,12 +336,13 @@ class DQN_AUTO:
                     self.episode_rewards_lst.append(episode_score)
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                    maze.produce_video(str(episode))
+                    maze.produce_video(str(episode), 'training_episode_videos')
                     # break
             if episode == 0:
                 self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
             else:
                 self.save_to_csv([episode, episode_score], "data.csv", None)
+        self.model.save_weights(save_weights_dir)
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
             # plot_thread.start()
                 # print("total steps: ", total_step)

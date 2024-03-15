@@ -39,7 +39,7 @@ class Maze_AUTO:
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
         marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
-        imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
+        imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
         # TODO: Make zoom relative to maze size above, or else changing to a 
         # larger maze may make the marker image too large compared to small maze squares
         ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
@@ -69,7 +69,7 @@ class Maze_AUTO:
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
         marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
-        imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
+        imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
         # TODO: Make zoom relative to maze size above, or else changing to a 
         # larger maze may make the marker image too large compared to small maze squares
         ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
@@ -280,12 +280,12 @@ class Maze_AUTO:
         new_state_img = self.generate_img(time_step)
         return (new_state_img, reward, game_over)
 
-    def produce_video(self, episodeNum: str):
+    def produce_video(self, episodeNum: str, folderPath):
         GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
         frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
         frame_one = frames[0]
-        os.makedirs('gifs', exist_ok = True)
-        gif_name = "gifs/" + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
+        os.makedirs(folderPath, exist_ok = True)
+        gif_name = folderPath+ '/' + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
 

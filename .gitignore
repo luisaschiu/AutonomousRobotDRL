@@ -5,6 +5,7 @@
 /data_plots
 /autotest/autotest_results
 /autotest/robot_steps
-/autotest/gifs
+/autotest/training_episode_videos
+/autotest//gameplay_episode_videos
 /autotest/data.csv
 /autotest/__pycache__

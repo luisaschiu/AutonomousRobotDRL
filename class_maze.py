@@ -39,7 +39,7 @@ class Maze:
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
         marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
-        imagebox = OffsetImage(marker, zoom = 0.20, cmap = 'gray')
+        imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
         # TODO: Make zoom relative to maze size above, or else changing to a 
         # larger maze may make the marker image too large compared to small maze squares
         ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)

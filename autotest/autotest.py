@@ -17,9 +17,9 @@ if __name__ == "__main__":
     # If you are continuing a test of the same batch of varying parameters, just run this program and it will leave the existing images alone.
     
     ''' Test varying rewards'''
-    replay_start_size = 16
+    replay_start_size = 512 #(8^3)
     final_exploration_frame = 1000
-    max_step_per_episode = 20
+    max_steps_per_episode = 64 #(8^2)
 
     goal = 10
     visited = -0.6
@@ -27,11 +27,17 @@ if __name__ == "__main__":
     run = 0
     lst = []
     maze_array = np.array(
-        [[0.0, 1.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 0.0],
-        [1.0, 1.0, 0.0, 1.0],
-        [0.0, 1.0, 0.0, 0.0]])
+        [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+        [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
+        [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
     marker_filepath = "images/marker8.jpg"
+    # maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (3,3), 180)
+    # maze.show()
     # Test changing new_step reward:
     folder_path = 'autotest_results'
     for i in range(-7, -2, 1):
@@ -41,9 +47,9 @@ if __name__ == "__main__":
             run += 1
             continue
         new_step = value
-        maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (3,3), 180)
+        maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (7,7), 180)
         network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame, max_steps_per_episode = max_steps_per_episode)
-        network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step)
+        network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step, save_weights_dir = ('model_weights_' + str(run)))
         rewards_lst = network.episode_rewards_lst
         total_step_loss_lst = network.total_step_loss_lst
         loss_lst = network.loss_lst
