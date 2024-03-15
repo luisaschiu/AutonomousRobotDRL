@@ -48,9 +48,6 @@ class DQN:
         self.total_step_loss_lst = []
         self.expl_rate_lst = []
 
-    def normalize_image_pixels(x):
-        return x/255.0
-    # Method with normalizing image
     def build_model(self):
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
         # From Google article pseudocode line 2: Initialize action-value function Q with random weights
