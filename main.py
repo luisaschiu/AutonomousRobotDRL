@@ -110,27 +110,26 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
     plt.clf()
 
-    # # After training and saving weights:
-    # Print weights of each layer
-    weights = network.model.get_weights()
-    for i, layer_weights in enumerate(weights):
-        print(f"Layer {i} weights:")
-        print(layer_weights)
-
     answer = input("Ready to play the game? y/n")
     # Create a new object, load weights, and see if it works?
     if answer == "y":
         new_network = DQN((120, 120))
         weights = new_network.model.get_weights()
+        print("Before loading weights")
         for i, layer_weights in enumerate(weights):
             print(f"Layer {i} weights:")
             print(layer_weights)
-        new_network.play_game(maze, 10, True)
-        weights = new_network.model.get_weights()
-        for i, layer_weights in enumerate(weights):
-            print(f"Layer {i} weights:")
-            print(layer_weights)
-
+        new_network.play_game(maze, 10, "model_weights.h5")
+    
+    # # Testing for saving and loading weights
+    # original_weights = network.model.get_weights()
+    # loaded_weights = new_network.model.get_weights()
+    # for layer_idx in range(len(original_weights)):
+    #     print("Layer", layer_idx)
+    #     # print("Original Weights:", original_weights[layer_idx])
+    #     # print("Loaded Weights:", loaded_weights[layer_idx])
+    #     print("Weights Match:", (original_weights[layer_idx] == loaded_weights[layer_idx]).all())
+    #     print()
         
     # # Testing for autotest.py
     # run = 0

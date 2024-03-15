@@ -59,7 +59,7 @@ class DQN:
         # input_layer = Input(shape = (389, 398, 4))
         # normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
         normalized_input = Rescaling(scale=1.0/255.0)(input_layer)
-        print(normalized_input)
+        # print(normalized_input)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
         conv2 = Conv2D(filters=64, kernel_size=(4,4), strides=(2,2), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv1)
         conv3 = Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(conv2)
@@ -289,22 +289,22 @@ class DQN:
     #     ani = FuncAnimation(fig, self.animate())  # Create the animation
     #     plt.show()  # Show the plot and animation
 
-    def save_weights(self):
-        model_json = self.model.to_json()
-        with open("model.json", "w") as json_file:
-            json_file.write(model_json)
-        # serialize weights to HDF5
-        self.model.save_weights("model.h5")
-        print("Saved model to disk")
+    # def save_weights(self):
+    #     model_json = self.model.to_json()
+    #     with open("model.json", "w") as json_file:
+    #         json_file.write(model_json)
+    #     # serialize weights to HDF5
+    #     self.model.save_weights("model.h5")
+    #     print("Saved model to disk")
     
-    def load_weights(self):
-        json_file = open('model.json', 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        # loaded_model = models.model_from_json(loaded_model_json, safe_mode = False)
-        loaded_model = models.model_from_json(loaded_model_json)  # Load model architecture from JSON
-        loaded_model.load_weights("model.h5")  # Load weights separately
-        print("Loaded model from disk")
+    # def load_weights(self):
+    #     json_file = open('model.json', 'r')
+    #     loaded_model_json = json_file.read()
+    #     json_file.close()
+    #     # loaded_model = models.model_from_json(loaded_model_json, safe_mode = False)
+    #     loaded_model = models.model_from_json(loaded_model_json)  # Load model architecture from JSON
+    #     loaded_model.load_weights("model.h5")  # Load weights separately
+    #     print("Loaded model from disk")
 
     def train_agent(self, maze: Maze, num_episodes = 100):
         loss = 0
@@ -362,7 +362,7 @@ class DQN:
                 self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
             else:
                 self.save_to_csv([episode, episode_score], "data.csv", None)
-        self.save_weights()
+        self.model.save_weights("model_weights.h5")
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
             # plot_thread.start()
                 # print("total steps: ", total_step)
@@ -380,15 +380,11 @@ class DQN:
     # def play_game(self, maze:Maze, num_episodes, load_weights:bool):
     
     # NOTE: Look into when image folders or gifs are being re-written, maybe make a separate game play folder to include all of the gifs and robot_steps?
-    def play_game(self, maze:Maze, num_episodes, load_weight_bool:bool):
-        weights = self.model.get_weights()
-        for i, layer_weights in enumerate(weights):
-            print(f"Layer {i} weights:")
-            print(layer_weights)
-
+    def play_game(self, maze:Maze, num_episodes, load_weight_dir=None):
         print("Playing game...")
-        if load_weight_bool:
-            self.load_weights()
+        status = None
+        if load_weight_dir is not None:
+            self.model.load_weights(load_weight_dir)
         total_step = 0
         maze.deleteGifs()
         for episode in range(num_episodes):
@@ -412,9 +408,12 @@ class DQN:
                 next_state = self.preprocess_image(episode_step, next_state_img)
                 state = next_state
                 if episode_step == self.max_steps_per_episode:
+                    status = "LOSE"
                     game_over = True
-                    print("LOSE")
                 if game_over:
-                    print('Game Over.')
+                    if status == "LOSE":
+                        print('Game Over. LOSE!')
+                    else:
+                        print('Game Over. WIN!')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     maze.produce_video(str(episode))

@@ -248,7 +248,7 @@ class DQN:
 if __name__ == "__main__":
     # pass
     # Initial parameters: create maze
-    # Testing one run of the train_agent code:
+    # Testing Rescaling layer:
     maze_array = np.array(
     [[0.0, 1.0, 1.0, 0.0],
     [0.0, 0.0, 0.0, 0.0],
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     print("Before normalizing, input data:")
     print(state)
     input_layer = Input(shape = (389, 389, 4), batch_size=32)
-    normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
+    normalized_input = Rescaling(scale=1.0/255.0)(input_layer)
     temp_model = models.Model(inputs=input_layer, outputs=normalized_input)
     lambda_output = temp_model.predict(state)
     print("After normalizing, output data:")
