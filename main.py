@@ -111,7 +111,7 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
     plt.clf()
 
-    answer = input("Ready to play the game? y/n")
+    answer = input("Ready to play the game? y/n: ")
     # Create a new object, load weights, and see if it works?
     if answer == "y":
         new_network = DQN((120, 120))

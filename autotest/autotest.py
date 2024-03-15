@@ -18,12 +18,12 @@ if __name__ == "__main__":
     
     ''' Test varying rewards'''
     replay_start_size = 512 #(8^3)
-    final_exploration_frame = 4000
+    final_exploration_frame = 1000
     max_steps_per_episode = 64 #(8^2)
 
-    goal = 100
-    visited = -0.6
-    new_step = -0.3
+    goal = 10
+    visited = -0.14
+    new_step = -0.07
     run = 0
     lst = []
     maze_array = np.array(
@@ -40,13 +40,15 @@ if __name__ == "__main__":
     # maze.show()
     # Test changing new_step reward:
     folder_path = 'autotest_results'
-    for i in range(10, 50, 5):
-        lst.append(i)
+    for i in range(-10, -1, 1):
+        lst.append(i/100)
     for value in lst:
         if os.path.isfile(folder_path + 'expl_rate_/' + str(run) + '.png'):
             run += 1
             continue
-        goal = value
+        new_step = value
+        visited= new_step*2
+        print(visited)
         maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (7,7), 180)
         network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame, max_steps_per_episode = max_steps_per_episode)
         network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step, save_weights_dir = ('model_weights_' + str(run)))

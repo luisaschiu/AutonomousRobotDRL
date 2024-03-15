@@ -249,7 +249,7 @@ class Maze:
             return -0.6
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -0.2
+            return -0.06
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
