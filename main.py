@@ -74,21 +74,12 @@ if __name__ == "__main__":
     marker_filepath = "images/marker8.jpg"
     maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
     network = DQN((120, 120))
-
-    # Before training:
-    # Print weights of each layer
-    weights = network.model.get_weights()
-    for i, layer_weights in enumerate(weights):
-        print(f"Layer {i} weights:")
-        print(layer_weights)
-
-    network.train_agent(maze, 5)
+    network.train_agent(maze, 200)
     rewards_lst = network.episode_rewards_lst
     total_step_loss_lst = network.total_step_loss_lst
     loss_lst = network.loss_lst
     expl_rate_lst = network.expl_rate_lst
     
-
     data_folder_path = 'data_plots'
     os.makedirs(data_folder_path, exist_ok = True)
     # plt.clf()
@@ -114,11 +105,6 @@ if __name__ == "__main__":
     # Create a new object, load weights, and see if it works?
     if answer == "y":
         new_network = DQN((120, 120))
-        weights = new_network.model.get_weights()
-        print("Before loading weights")
-        for i, layer_weights in enumerate(weights):
-            print(f"Layer {i} weights:")
-            print(layer_weights)
         new_network.play_game(maze, 10, "model_weights.h5")
     
     # # Testing for saving and loading weights

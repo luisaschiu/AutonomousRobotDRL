@@ -1,5 +1,6 @@
 /robot_steps
-/gifs
+/training_episode_videos
+/gameplay_episode_videos
 /data.csv
 /data_plots
 /autotest/autotest_results

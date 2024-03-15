@@ -276,12 +276,12 @@ class Maze:
         new_state_img = self.generate_img(time_step)
         return (new_state_img, reward, game_over)
 
-    def produce_video(self, episodeNum: str):
+    def produce_video(self, episodeNum: str, folderPath):
         GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
         frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.JPG")]
         frame_one = frames[0]
-        os.makedirs('gifs', exist_ok = True)
-        gif_name = "gifs/" + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
+        os.makedirs(folderPath, exist_ok = True)
+        gif_name = folderPath+ '/' + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
 

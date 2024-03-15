@@ -29,7 +29,7 @@ class DQN:
         self.final_exploration_frame = 1000
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = 20
+        self.max_steps_per_episode = 16
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
@@ -306,7 +306,7 @@ class DQN:
     #     loaded_model.load_weights("model.h5")  # Load weights separately
     #     print("Loaded model from disk")
 
-    def train_agent(self, maze: Maze, num_episodes = 100):
+    def train_agent(self, maze: Maze, num_episodes = 200):
         loss = 0
         total_step = 0
         maze.deleteGifs()
@@ -356,7 +356,7 @@ class DQN:
                     self.episode_rewards_lst.append(episode_score)
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                    maze.produce_video(str(episode))
+                    maze.produce_video(str(episode), 'training_episode_videos')
                     # break
             if episode == 0:
                 self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
@@ -416,4 +416,4 @@ class DQN:
                     else:
                         print('Game Over. WIN!')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
-                    maze.produce_video(str(episode))
+                    maze.produce_video(str(episode), 'gameplay_episode_videos')
