@@ -26,7 +26,7 @@ class DQN:
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  This performed better than the past
-        self.final_exploration_frame = 2000 # (250*nrows)
+        self.final_exploration_frame = 4000 # (250*nrows)
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = 64 # nrows^2
