@@ -18,7 +18,7 @@ if __name__ == "__main__":
     
     ''' Test varying rewards'''
     replay_start_size = 512 #(8^3)
-    final_exploration_frame = 1000
+    final_exploration_frame = 4000
     max_steps_per_episode = 64 #(8^2)
 
     goal = 100
