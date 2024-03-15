@@ -65,14 +65,13 @@ def data_thread():
 #         time.sleep(1)  # Keep the main thread running
         
 if __name__ == "__main__":
-    # Testing train_agent:
-    # 4x4 maze:
-    maze_array = np.array(
-    [[0.0, 1.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0],
-    [1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 0.0]])
-    # 8x8 maze:
+    # Using a 4x4 maze:
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0],
+    # [1.0, 1.0, 0.0, 1.0],
+    # [0.0, 1.0, 0.0, 0.0]])
+    # Using a 8x8 maze:
     maze_array = np.array(
     [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
     [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
@@ -117,7 +116,10 @@ if __name__ == "__main__":
     if answer == "y":
         new_network = DQN((120, 120))
         new_network.play_game(maze, 10, "model_weights.h5")
-    
+    if answer == "n":
+        print("Program Exited.")
+
+
     # # Testing for saving and loading weights
     # original_weights = network.model.get_weights()
     # loaded_weights = new_network.model.get_weights()
