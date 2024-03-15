@@ -394,7 +394,7 @@ class DQN:
             state = self.preprocess_image(episode_step, init_state)
             while not game_over:
                 available_actions = maze.get_available_actions()
-                action = self.get_action(state, available_actions, 0.1)
+                action = self.get_action(state, available_actions, 0.01)
                 total_step += 1
                 episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
