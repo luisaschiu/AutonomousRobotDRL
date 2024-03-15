@@ -29,7 +29,7 @@ class DQN:
         self.final_exploration_frame = 1000
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = 16
+        self.max_steps_per_episode = 32
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
