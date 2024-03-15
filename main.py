@@ -74,7 +74,15 @@ if __name__ == "__main__":
     marker_filepath = "images/marker8.jpg"
     maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
     network = DQN((120, 120))
-    network.train_agent(maze, 200)
+
+    # Before training:
+    # Print weights of each layer
+    weights = network.model.get_weights()
+    for i, layer_weights in enumerate(weights):
+        print(f"Layer {i} weights:")
+        print(layer_weights)
+
+    network.train_agent(maze, 5)
     rewards_lst = network.episode_rewards_lst
     total_step_loss_lst = network.total_step_loss_lst
     loss_lst = network.loss_lst
@@ -102,7 +110,29 @@ if __name__ == "__main__":
     plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
     plt.clf()
 
-    # Testing for autotest.py
+    # # After training and saving weights:
+    # Print weights of each layer
+    weights = network.model.get_weights()
+    for i, layer_weights in enumerate(weights):
+        print(f"Layer {i} weights:")
+        print(layer_weights)
+
+    answer = input("Ready to play the game? y/n")
+    # Create a new object, load weights, and see if it works?
+    if answer == "y":
+        new_network = DQN((120, 120))
+        weights = new_network.model.get_weights()
+        for i, layer_weights in enumerate(weights):
+            print(f"Layer {i} weights:")
+            print(layer_weights)
+        new_network.play_game(maze, 10, True)
+        weights = new_network.model.get_weights()
+        for i, layer_weights in enumerate(weights):
+            print(f"Layer {i} weights:")
+            print(layer_weights)
+
+        
+    # # Testing for autotest.py
     # run = 0
     # folder_path = 'autotest_results'
     # value_lst = [0.3, 0.5, 0.6, 0.8, 0.10]

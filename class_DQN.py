@@ -42,11 +42,15 @@ class DQN:
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
+        self.actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         self.episode_rewards_lst = []
         self.loss_lst = []
         self.total_step_loss_lst = []
         self.expl_rate_lst = []
 
+    def normalize_image_pixels(x):
+        return x/255.0
+        
     # Method with normalizing image
     def build_model(self):
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
@@ -68,10 +72,9 @@ class DQN:
 
     def get_action(self, state, available_actions, expl_rate):
         # #  This means that every value within the range [0, 1) has an equal probability of being chosen.
-        actions_list = ["UP", "DOWN", "LEFT", "RIGHT"]
         if tf.random.uniform((), minval=0, maxval=1, dtype=tf.float32) < expl_rate:
             # Filter available actions
-            valid_actions = [action for action, is_available in zip(actions_list, available_actions) if is_available]
+            valid_actions = [action for action, is_available in zip(self.actions_list, available_actions) if is_available]
             return random.choice(valid_actions)
         else:
             array=self.model.predict(state)
@@ -80,7 +83,7 @@ class DQN:
             masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
             # print(masked_qval_array)
             max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
-            return actions_list[max_val_index]
+            return self.actions_list[max_val_index]
         
     def remember(self, state, action, reward, next_state, game_over, next_state_available_action):
         self.replay_memory.append((state, action, reward, next_state, game_over, next_state_available_action))
@@ -285,6 +288,23 @@ class DQN:
     #     ani = FuncAnimation(fig, self.animate())  # Create the animation
     #     plt.show()  # Show the plot and animation
 
+    def save_weights(self):
+        model_json = self.model.to_json()
+        with open("model.json", "w") as json_file:
+            json_file.write(model_json)
+        # serialize weights to HDF5
+        self.model.save_weights("model.h5")
+        print("Saved model to disk")
+    
+    def load_weights(self):
+        json_file = open('model.json', 'r')
+        loaded_model_json = json_file.read()
+        json_file.close()
+        # loaded_model = models.model_from_json(loaded_model_json, safe_mode = False)
+        loaded_model = models.model_from_json(loaded_model_json)  # Load model architecture from JSON
+        loaded_model.load_weights("model.h5")  # Load weights separately
+        print("Loaded model from disk")
+
     def train_agent(self, maze: Maze, num_episodes = 100):
         loss = 0
         total_step = 0
@@ -341,6 +361,7 @@ class DQN:
                 self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
             else:
                 self.save_to_csv([episode, episode_score], "data.csv", None)
+        self.save_weights()
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
             # plot_thread.start()
                 # print("total steps: ", total_step)
@@ -355,3 +376,41 @@ class DQN:
                 #     break
                 # If episode does not terminate... continue onto last lines of pseudocode
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
+    # def play_game(self, maze:Maze, num_episodes, load_weights:bool):
+    
+    # NOTE: Look into when image folders or gifs are being re-written, maybe make a separate game play folder to include all of the gifs and robot_steps?
+    def play_game(self, maze:Maze, num_episodes, load_weight_bool:bool):
+        weights = self.model.get_weights()
+        for i, layer_weights in enumerate(weights):
+            print(f"Layer {i} weights:")
+            print(layer_weights)
+
+        print("Playing game...")
+        if load_weight_bool:
+            self.load_weights()
+        total_step = 0
+        maze.deleteGifs()
+        for episode in range(num_episodes):
+            self.cur_stacked_images.clear()
+            episode_step = 0
+            episode_score = 0.0
+            game_over = False
+            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
+            init_state = maze.reset(episode_step)
+            state = self.preprocess_image(episode_step, init_state)
+            while not game_over:
+                available_actions = maze.get_available_actions()
+                action = self.get_action(state, available_actions, 0.1)
+                total_step += 1
+                episode_step += 1
+                # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
+                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                episode_score += reward
+                # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
+                # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
+                next_state = self.preprocess_image(episode_step, next_state_img)
+                state = next_state
+                if game_over:
+                    print('Game Over.')
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    maze.produce_video(str(episode))

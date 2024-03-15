@@ -20,7 +20,7 @@ class Maze:
         self.goal_pt = goal_pt
         # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
-        self.min_reward = -0.5*maze.size
+        # self.min_reward = -0.5*maze.size
         self.total_reward = 0
 #        self.traversed = np.array([]) # creates an empty numpy array
 
@@ -253,7 +253,6 @@ class Maze:
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
-        # TODO: Get rid of this, account for maximum time steps allowed in class DQN
         # If rewards value is less than the minimum rewards allowed
         # if self.total_reward < self.min_reward:
         #     return True
