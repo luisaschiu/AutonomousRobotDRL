@@ -21,15 +21,15 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 16
+        self.replay_start_size = 512 # nrows^3
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  This performed better than the past
-        self.final_exploration_frame = 1000
+        self.final_exploration_frame = 2000 # (250*nrows)
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = 32
+        self.max_steps_per_episode = 64 # nrows^2
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
