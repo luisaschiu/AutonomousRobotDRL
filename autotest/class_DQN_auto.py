@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import pandas as pd
 import threading
+import os
 
 class DQN_AUTO:
     def __init__(self, state_size, replay_start_size, final_exploration_frame, max_steps_per_episode):
@@ -342,6 +343,7 @@ class DQN_AUTO:
                 self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
             else:
                 self.save_to_csv([episode, episode_score], "data.csv", None)
+        os.makedirs(save_weights_dir, exist_ok = True)
         self.model.save_weights(save_weights_dir)
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
             # plot_thread.start()
