@@ -121,10 +121,9 @@ if __name__ == "__main__":
             continue
         # Assign changing/varying parameter in the line below
         final_exploration_frame = value
-
         maze = Maze_AUTO(maze_array, marker_filepath, (0,0), (7,7), 180)
         network = DQN_AUTO(state_size = (120, 120), replay_start_size=replay_start_size, final_exploration_frame=final_exploration_frame, max_steps_per_episode = max_steps_per_episode)
-        network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step, save_weights_dir='/autotest_weights')
+        network.train_agent(maze, 200, goal_rwd = goal, visited_rwd= visited, new_step_rwd = new_step, save_weights_dir= ('model_weights_' + str(run)))
         rewards_lst = network.episode_rewards_lst
         total_step_loss_lst = network.total_step_loss_lst
         loss_lst = network.loss_lst
