@@ -379,12 +379,12 @@ class DQN:
     # NOTE: Look into when image folders or gifs are being re-written, maybe make a separate game play folder to include all of the gifs and robot_steps?
     def play_game(self, maze:Maze, num_episodes, load_weight_dir=None):
         print("Playing game...")
-        status = None
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
         total_step = 0
         maze.deleteGifs()
         for episode in range(num_episodes):
+            status = None
             self.cur_stacked_images.clear()
             episode_step = 0
             episode_score = 0.0
@@ -405,12 +405,13 @@ class DQN:
                 next_state = self.preprocess_image(episode_step, next_state_img)
                 state = next_state
                 if episode_step == self.max_steps_per_episode:
-                    status = "LOSE"
+                    status = 0
                     game_over = True
                 if game_over:
-                    if status == "LOSE":
+                    if status == 0:
                         print('Game Over. LOSE!')
                     else:
+                        status = 1
                         print('Game Over. WIN!')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # save data to .csv file
