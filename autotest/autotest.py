@@ -41,10 +41,8 @@ if __name__ == "__main__":
     # Test changing new_step reward:
     folder_path = 'autotest_results'
     os.makedirs(folder_path, exist_ok = True)
-    for i in range(-60, -5, 1):
+    for i in range(-30, -5, 5):
         lst.append(i/100)
-        print(i/100)
-        # print('hi')
     for value in lst:
         if os.path.isfile(folder_path + 'expl_rate_/' + str(run) + '.png'):
             run += 1
