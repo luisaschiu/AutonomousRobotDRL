@@ -14,22 +14,22 @@ import pandas as pd
 import threading
 
 class DQN:
-    def __init__(self, state_size):
+    def __init__(self, state_size, maze_size):
         # State size is the image size
         self.state_size = state_size
         self.action_size = 4
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = 512 # nrows^3
+        self.replay_start_size = maze_size**3 # nrows^3
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  This performed better than the past
-        self.final_exploration_frame = 1000 # (250*nrows)
+        self.final_exploration_frame = maze_size*250 # Josh uses: (nrows^3*5)
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = 64 # nrows^2
+        self.max_steps_per_episode = maze_size**2 # nrows^2
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
@@ -356,9 +356,9 @@ class DQN:
                     maze.produce_video(str(episode), 'training_episode_videos')
                     # break
             if episode == 0:
-                self.save_to_csv([episode, episode_score], "data.csv", ["Episode", "Reward"])
+                self.save_to_csv([episode, episode_score, episode_step], "training_data.csv", ["Episode", "Reward", "Steps"])
             else:
-                self.save_to_csv([episode, episode_score], "data.csv", None)
+                self.save_to_csv([episode, episode_score, episode_step], "training_data.csv", None)
         self.model.save_weights("model_weights.h5")
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
             # plot_thread.start()
@@ -413,4 +413,9 @@ class DQN:
                     else:
                         print('Game Over. WIN!')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    # save data to .csv file
+                    if episode == 0:
+                        self.save_to_csv([episode, episode_score, episode_step, status], "gameplay_data.csv", ["Episode", "Reward", "Steps", "Game Status"])
+                    else:
+                        self.save_to_csv([episode, episode_score, episode_step, status], "gameplay_data.csv", None)
                     maze.produce_video(str(episode), 'gameplay_episode_videos')

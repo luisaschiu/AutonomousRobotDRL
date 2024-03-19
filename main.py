@@ -66,24 +66,27 @@ def data_thread():
         
 if __name__ == "__main__":
     # Using a 4x4 maze:
-    # maze_array = np.array(
-    # [[0.0, 1.0, 1.0, 0.0],
-    # [0.0, 0.0, 0.0, 0.0],
-    # [1.0, 1.0, 0.0, 1.0],
-    # [0.0, 1.0, 0.0, 0.0]])
-    # Using a 8x8 maze:
     maze_array = np.array(
-    [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
-    [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
-    [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    maze_size = 4
+    # Using a 8x8 maze:
+    # maze_array = np.array(
+    # [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+    # [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+    # [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
+    # [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0],
+    # [0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+    # [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
+    # [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+    # maze_size = 8
+
     marker_filepath = "images/marker8.jpg"
-    maze = Maze(maze_array, marker_filepath, (0,0), (7,7), 180)
-    network = DQN((120, 120))
+    maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    network = DQN((120, 120), maze_size)
     network.train_agent(maze, 200)
     rewards_lst = network.episode_rewards_lst
     total_step_loss_lst = network.total_step_loss_lst
@@ -93,19 +96,22 @@ if __name__ == "__main__":
     data_folder_path = 'data_plots'
     os.makedirs(data_folder_path, exist_ok = True)
     # plt.clf()
-    plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst, color='blue', linestyle='-', marker='o', label='Lines')
+    # plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst, color='blue', linestyle='-', label='Lines')
+    plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst)
     plt.xlabel('Episodes')
     plt.ylabel('Rewards')
     plt.savefig(os.path.join(data_folder_path + '/rewards.png'))
     plt.clf()
 
-    plt.plot(total_step_loss_lst, loss_lst, color='blue', linestyle='-', marker='o', label='Lines')
+    # plt.plot(total_step_loss_lst, loss_lst, color='blue', linestyle='-', label='Lines')
+    plt.plot(total_step_loss_lst, loss_lst)
     plt.xlabel('Steps')
     plt.ylabel('Loss')
     plt.savefig(os.path.join(data_folder_path + '/loss.png'))
     plt.clf()
 
-    plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst, color='blue', linestyle='-', marker='o', label='Lines')
+    # plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst, color='blue', linestyle='-', label='Lines')
+    plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst)
     plt.xlabel('Steps')
     plt.ylabel('Expl_rate')
     plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
@@ -114,8 +120,8 @@ if __name__ == "__main__":
     answer = input("Ready to play the game? y/n: ")
     # Create a new object, load weights, and see if it works?
     if answer == "y":
-        new_network = DQN((120, 120))
-        new_network.play_game(maze, 10, "model_weights.h5")
+        new_network = DQN((120, 120), maze_size)
+        new_network.play_game(maze, 100, "model_weights.h5")
     if answer == "n":
         print("Program Exited.")
 
