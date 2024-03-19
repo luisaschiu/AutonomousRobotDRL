@@ -8,6 +8,7 @@ import os
 if __name__ == "__main__":
 
     dim = int(input('Enter a maze size: '))
+    episodes = int(input('Enter number of episodes: '))
 
     grid = generateMaze(dim)
     gridRGB = prepareGrid(grid)
@@ -24,4 +25,4 @@ if __name__ == "__main__":
     maze = Maze(maze_array, marker_filepath, goal_filepath, start, goal, 180, hidden_goal=True)
     init_state = maze.reset(0)
     network = DQN((init_state.shape), len(maze_array[0]))
-    network.train_agent(maze,100)
+    network.train_agent(maze,episodes)
