@@ -29,12 +29,12 @@ class DQN:
         self.final_exploration_frame = maze_size*250 # Josh uses: (nrows^3*5)
         self.learning_rate = 0.001
         self.minibatch_size = 32
-        self.max_steps_per_episode = maze_size**2 # nrows^2
+        self.max_steps_per_episode = maze_size*5 # nrows^2
         self.win_history = []
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
-        self.update_target_network_freq = 24
+        self.update_target_network_freq = maze_size*6 
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
