@@ -2,6 +2,7 @@ import cv2 as cv2
 import random
 import numpy as np
 import os, sys
+from queue import Queue
 
 
 class Cell():
@@ -179,6 +180,23 @@ def longest_path(maze):
             if maze[i][j] == 0:
                 start[0], start[1] = i, j
                 dfs(i, j, set(), 0)
-                return start, end
 
-    return None
+    # BFS to find the shortest path from start to end
+    visited = np.full(maze.shape, False)
+    dist = np.full(maze.shape, np.inf)
+    q = Queue()
+    q.put(start)
+    visited[start[0]][start[1]] = True
+    dist[start[0]][start[1]] = 0
+
+    while not q.empty():
+        x, y = q.get()
+        for dx, dy in directions:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < maze.shape[0] and 0 <= ny < maze.shape[1] and maze[nx][ny] == 0 and not visited[nx][ny]:
+                visited[nx][ny] = True
+                dist[nx][ny] = dist[x][y] + 1
+                q.put((nx, ny))
+
+    min_steps = dist[end[0]][end[1]]
+    return start, end, min_steps if min_steps != np.inf else None

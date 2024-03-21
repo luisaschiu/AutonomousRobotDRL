@@ -8,6 +8,7 @@ from scipy.ndimage import rotate
 import AruCo_functions
 import os
 import glob
+from PIL import Image
 
 class Maze:
     def __init__(self, maze:np.array, marker_filepath:str, goal_filepath:str, start_pt: tuple, goal_pt: tuple, start_orientation:int, hidden_goal=True):
@@ -21,13 +22,12 @@ class Maze:
         self.start_pt = start_pt
         self.goal_pt = goal_pt
         self.traversed = []
-        self.num_traversed = 0
-        # self.min_reward = -2*maze.size
         self.total_reward = 0
         self.hidden_goal = hidden_goal
         self.init_shape = None
 
     def generate_img(self, time_step):
+        IMAGE_DIGITS = 2
         nrows, ncols = self.maze.shape
         ax = plt.gca()
         ax.set_xticks(np.arange(0.5, nrows, 1))
@@ -53,18 +53,24 @@ class Maze:
         plt.imshow(self.maze, interpolation='none', cmap='binary')
         if not os.path.exists(directory):
             os.makedirs(directory)
-        fig = plt.savefig(directory + str(time_step) + '.jpg', bbox_inches='tight')
+
+        image_num = str(time_step)
+        image_num = (IMAGE_DIGITS - len(image_num)) * "0" + image_num
+        fig = plt.savefig(directory + image_num + '.jpg', bbox_inches='tight')
         plt.close(fig)
         
         # Read the image and ensure it is square
-        image = cv.imread(directory + str(time_step) + '.jpg')
+        image = cv.imread(directory + image_num + '.jpg')
         
-        cv.imwrite(directory + str(time_step) + '.jpg', image)
+        cv.imwrite(directory + image_num + '.jpg', image)
         cv.imshow('Frame', image)
         cv.waitKey(1)
         return cv.resize(image, (64,64))
+    
+    def deleteGifs(self):
+        for filename in glob.glob('gifs/*.gif'):
+            os.remove(filename)
 
-            
 
     def reset(self, time_step):
         for filename in glob.glob('robot_steps/*.jpg'):
@@ -208,8 +214,14 @@ class Maze:
         self.total_reward += self.get_reward()
         return (self.generate_img(time_step), self.get_reward(), self.game_over())
 
-    def produce_video():
-        pass
+    def produce_video(self, episodeNum: str, folderPath):
+        GIF_DIGITS = 2 # same logic as before, prepends 0's to start of gif
+        frames = [Image.open(image) for image in glob.glob(f"robot_steps/*.jpg")]
+        frame_one = frames[0]
+        os.makedirs(folderPath, exist_ok = True)
+        gif_name = folderPath+ '/' + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
+        frame_one.save(gif_name, format="GIF", append_images=frames,
+                save_all=True, duration=300, loop=0)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):

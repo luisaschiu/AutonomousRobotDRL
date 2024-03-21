@@ -10,37 +10,46 @@ import itertools
 import time
 import matplotlib.pyplot as plt
 import os
+import csv
 
 # Pre-compute unique_actions
 unique_actions = tf.constant(["UP", "DOWN", "LEFT", "RIGHT"])
 
 class DQN:
-    def __init__(self, state_size, size):
+    def __init__(self, state_size, size, action_size=4,replay_memory_capacity=10000000, gamma=0.9,
+                       epsilon_start=1.0, epsilon_end=0.05, learning_rate=1e-4, minibatch_size=32,
+                       agent_history_length=4, optimizer_epsilon=1e-6, result_directory='./results', result_filepath='/training_episodes_rewards'):
+        
         self.state_size = state_size
-        self.action_size = 4
-        self.replay_memory_capacity=10000000
+        self.action_size = action_size
+        self.replay_memory_capacity=replay_memory_capacity
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
         self.replay_start_size = size ** 2
-        self.gamma = 0.9
-        self.epsilon_start = 1.0
-        self.epsilon_end = 0.05
+        self.gamma = gamma
+        self.epsilon_start = epsilon_start
+        self.epsilon_end = epsilon_end
         self.final_exploration_frame = (size ** 3) * 5
-        self.learning_rate = 1e-4
-        self.minibatch_size = 32
-        self.max_steps_per_episode = size ** 3
+        self.learning_rate = learning_rate
+        self.minibatch_size = minibatch_size
+        self.max_steps_per_episode = (size ** 3)
         self.win_history = []
-        self.agent_history_length = 4
+        self.agent_history_length = agent_history_length
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
         self.update_target_network_period = ((size) ** 2)
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         self.target_model.set_weights(self.model.get_weights())
-        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
+        self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=optimizer_epsilon)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
+        self.result_directory = result_directory
+        self.result_filepath = result_filepath
+        self.episode_rewards_lst = []
+        self.loss_lst = []
+        self.total_step_loss_lst = []
+        self.expl_rate_lst = []
 
     def build_model(self):
-        print(self.state_size)
         input_layer = Input(shape = (self.state_size[0], self.state_size[1], self.agent_history_length), batch_size=self.minibatch_size)
         normalized_input = Lambda(lambda x: x / 255.0)(input_layer)
         conv1 = Conv2D(filters=32, kernel_size=(8,8), strides=(4,4), activation = 'relu', padding='same', kernel_initializer=initializers.VarianceScaling(scale=2.0))(normalized_input)
@@ -167,7 +176,24 @@ class DQN:
         tensor_batch = tf.expand_dims(tensor_transposed, axis=0)
         
         return tensor_batch
-    
+
+
+    def save_to_csv(self, data, file_path, headers=None):
+        """
+        Save data to a CSV file.
+
+        Parameters:
+            data: Data to be saved.
+            file_path (str): Path to the CSV file.
+            headers (list, optional): List of header names. Defaults to None.
+        """
+        mode = 'w' if headers else 'a'  # Use 'w' mode initially if headers are provided, otherwise use 'a' mode
+        # print("mode: ", mode)
+        with open(file_path, mode, newline="") as file:
+            writer = csv.writer(file)
+            if headers:
+                writer.writerow(headers)
+            writer.writerow(data)   
 
     def train_agent(self, maze: Maze, num_episodes = 1e7):
         total_step = 0
@@ -176,6 +202,7 @@ class DQN:
         for episode in range(num_episodes):
             start_time = time.time()
             self.cur_stacked_images.clear()
+            status = None
             episode_step = 0
             episode_score = 0.0
             game_over = False
@@ -185,9 +212,11 @@ class DQN:
             episode_q_vals = np.zeros(self.max_steps_per_episode+1)
 
             while not game_over:
-                action = self.get_action(state, maze.get_available_actions(), self.get_eps(total_step, self.epsilon_end))
+                action = self.get_action(state, maze.get_available_actions(), self.get_eps(total_step))
                 total_step += 1
                 episode_step += 1
+                expl_rate = self.get_eps(total_step)
+                self.expl_rate_lst.append(expl_rate)
                 (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
                 next_state = self.preprocess_image(episode_step, next_state_img)
@@ -198,51 +227,83 @@ class DQN:
                     loss, q_val = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
                     episode_q_vals[episode_step] = q_val
                     episode_losses[episode_step] = loss
+                    self.total_step_loss_lst.append(total_step)
+                    self.loss_lst.append(loss.numpy())
                 if episode_step == self.max_steps_per_episode:
+                    status = 0
                     game_over = True
-                    maze.num_traversed =0
                 if game_over:
                     stop_time = time.time()
                     elapsed_time = stop_time - start_time
                     print('Game Over.')
                     print(f'Time: {elapsed_time:.2f} s, Episode Num: {str(episode)}, Episode Rewards: {str(episode_score)}, Num Steps Taken: {str(episode_step)}')
                     scores[episode] = episode_score
-                    plt.figure(figsize=(10, 6))
-
-                    # Create an array of indices for the x-axis
-                    indices = np.arange(episode_step)
-
-                    # Create a bar for Q Value
-                    plt.bar(indices, episode_q_vals[:episode_step], label='Q Value')
-
-                    # Create a bar for Loss, offset by 0.4 units on the x-axis
-                    plt.bar(indices + 0.4, episode_losses[:episode_step], label='Loss', width=0.4)
-
-                    #Q_val & Loss Graph
-                    plt.xlabel('Steps')
-                    plt.ylabel('Loss & Q Value')
-                    plt.title('Episode Metrics Over Time')
-                    plt.grid(True)
-                    plt.legend()
-                    if not os.path.exists('results/episode_scores'):
-                        os.makedirs('results/episode_scores')
-                    plt.savefig(f'results/episode_scores/episode_{episode}.png')
-                    plt.close()
 
                     #Reward Graph
                     plt.figure(figsize=(10, 6))
                     plt.plot(np.arange(episode+1), scores[:episode+1])
                     plt.xlabel('Episodes')
-                    plt.ylabel('Scores')
-                    plt.title('Episode Scores Over Time')
+                    plt.ylabel('Rewards')
                     plt.grid(True)
                 
-                    if not os.path.exists('results'):
-                        os.makedirs('results')
-                    plt.savefig('results/episode_scores.png')
+                    if not os.path.exists(f'{self.result_directory}'):
+                        os.makedirs(f'{self.result_directory}')
+                    plt.savefig(f'{self.result_directory}/{self.result_filepath}.png')
                     plt.close()
+                    maze.produce_video(str(episode), f'{self.result_directory}/training_episode_videos')
+                    if episode == 0:
+                        self.save_to_csv([episode, episode_score, episode_step], f"{self.result_directory}/training_data.csv", ["Episode", "Reward", "Steps"])
+                    else:
+                        self.save_to_csv([episode, episode_score, episode_step], f"{self.result_directory}/training_data.csv", None)
+                        
                 if ((total_step % self.update_target_network_period == 0) and (total_step > self.replay_start_size)):
                     self.update_target_model()
+        self.model.save_weights(f"{self.result_directory}/model_weights.h5")
 
+
+    # NOTE: Look into when image folders or gifs are being re-written, maybe make a separate game play folder to include all of the gifs and robot_steps?
+    def play_game(self, maze:Maze, num_episodes, load_weight_dir=None):
+        print("Playing game...")
+        if load_weight_dir is not None:
+            self.model.load_weights(load_weight_dir)
+        total_step = 0
+        maze.deleteGifs()
+        for episode in range(num_episodes):
+            status = None
+            self.cur_stacked_images.clear()
+            episode_step = 0
+            episode_score = 0.0
+            game_over = False
+            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
+            init_state = maze.reset(episode_step)
+            state = self.preprocess_image(episode_step, init_state)
+            while not game_over:
+                available_actions = maze.get_available_actions()
+                action = self.get_action(state, available_actions, 0.01)
+                total_step += 1
+                episode_step += 1
+                # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
+                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                episode_score += reward
+                # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
+                # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
+                next_state = self.preprocess_image(episode_step, next_state_img)
+                state = next_state
+                if episode_step == self.max_steps_per_episode:
+                    status = 0
+                    game_over = True
+                if game_over:
+                    if status == 0:
+                        print('Game Over. LOSE!')
+                    else:
+                        status = 1
+                        print('Game Over. WIN!')
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    # save data to .csv file
+                    if episode == 0:
+                        self.save_to_csv([episode, episode_score, episode_step, status], f"{self.result_directory}/gameplay_data.csv", ["Episode", "Reward", "Steps", "Game Status"])
+                    else:
+                        self.save_to_csv([episode, episode_score, episode_step, status], f"{self.result_directory}/gameplay_data.csv", None)
+                    maze.produce_video(str(episode), f'{self.result_directory}/evaluation_episode_videos')
 
                 
