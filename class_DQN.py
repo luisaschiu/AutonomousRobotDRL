@@ -126,8 +126,8 @@ class DQN:
     #     return eps
     
     def get_eps(self, steps):
-        # return math.exp(-0.008*steps) # Good fo 4x4 maze
-        return math.exp(-0.004*steps)
+        return math.exp(-0.008*steps) # Good for 4x4 maze
+        # return math.exp(-0.004*steps) # Test for 8x8 maze
 
     
     @tf.function

@@ -66,21 +66,13 @@ def data_thread():
 #         time.sleep(1)  # Keep the main thread running
         
 if __name__ == "__main__":
-    show_pickle_figure('data_plots/' + 'rewards.pickle')
-    save_pickle_to_csv('data_plots/test', 'data_plots/' + 'rewards.pickle')
-    # figx = pickle.load(open('data_plots/' + 'rewards.pickle', 'rb'))
-    # figx.show() # Show the figure, edit it, etc.!
-    
-    # plt.show(block=True)
-    
-    pass
-    # # Using a 4x4 maze:
-    # maze_array = np.array(
-    # [[0.0, 1.0, 1.0, 0.0],
-    # [0.0, 0.0, 0.0, 0.0],
-    # [1.0, 1.0, 0.0, 1.0],
-    # [0.0, 1.0, 0.0, 0.0]])
-    # maze_size = 4
+    # Using a 4x4 maze:
+    maze_array = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    maze_size = 4
     # # Using a 8x8 maze:
     # maze_array = np.array(
     # [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
@@ -93,14 +85,11 @@ if __name__ == "__main__":
     # [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
     # maze_size = 8
 
-    # marker_filepath = "images/marker8.jpg"
-    # maze = Maze(maze_array, marker_filepath, (0,0), (3,3), 180)
+    marker_filepath = "images/marker8.jpg"
+    maze = Maze(maze_array, marker_filepath, (1,0), (3,3), 180)
+    maze.show()
     # network = DQN((120, 120), maze_size)
-    # network.train_agent(maze, 3)
-    # rewards_lst = network.episode_rewards_lst
-    # total_step_loss_lst = network.total_step_loss_lst
-    # loss_lst = network.loss_lst
-    # expl_rate_lst = network.expl_rate_lst
+    # network.train_agent(maze, 200)
 
     # answer = input("Ready to play the game? y/n: ")
     # # Create a new object, load weights, and see if it works?
@@ -110,6 +99,10 @@ if __name__ == "__main__":
     # if answer == "n":
     #     print("Program Exited.")
 
+
+    # # Test evaluation of post training data
+    # show_pickle_figure('data_plots/' + 'rewards.pickle')
+    # save_pickle_to_csv('data_plots/test', 'data_plots/' + 'rewards.pickle')
 
     # # Testing for saving and loading weights
     # original_weights = network.model.get_weights()
