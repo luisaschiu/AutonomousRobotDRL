@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import pandas as pd
 import threading
+import math
+import pickle
+import os
 
 class DQN:
     def __init__(self, state_size, maze_size):
@@ -90,39 +93,43 @@ class DQN:
         self.target_model.set_weights(self.model.get_weights())
 
     # NOTE: get_eps function taken from Atari game. Used to calculate epsilon value for epsilon-greedy policy based on an annealing schedule.
-    def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
-        """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
+    # def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
+    #     """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
 
-        Args:
-            current_step (int): Number of entire steps agent experienced.
-            terminal_eps (float): Final exploration rate arrived at terminal_frame_factor * self.final_exploration_frame.
-            terminal_frame_factor (int): Final exploration frame, which is terminal_frame_factor * self.final_exploration_frame.
+    #     Args:
+    #         current_step (int): Number of entire steps agent experienced.
+    #         terminal_eps (float): Final exploration rate arrived at terminal_frame_factor * self.final_exploration_frame.
+    #         terminal_frame_factor (int): Final exploration frame, which is terminal_frame_factor * self.final_exploration_frame.
 
-        Returns:
-            eps (float): Calculated epsilon for ε-greedy at current_step.
-        """
-        terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
-        # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
-        if current_step < self.replay_start_size:
-            # print("In if statement")
-            eps = self.init_exploration_rate
-        # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
-        # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
-        elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
-            # print("In 1st elif statement")
-            eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
-        # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
-        elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
-            # print("In 2nd elif statement")
-            eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
-        else:
-            # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
-            # there is a very low chance of exploration.
-            # print("In else statement")
-            eps = terminal_eps
-        return eps
+    #     Returns:
+    #         eps (float): Calculated epsilon for ε-greedy at current_step.
+    #     """
+    #     terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
+    #     # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
+    #     if current_step < self.replay_start_size:
+    #         # print("In if statement")
+    #         eps = self.init_exploration_rate
+    #     # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
+    #     # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
+    #     elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
+    #         # print("In 1st elif statement")
+    #         eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
+    #     # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
+    #     elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
+    #         # print("In 2nd elif statement")
+    #         eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
+    #     else:
+    #         # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
+    #         # there is a very low chance of exploration.
+    #         # print("In else statement")
+    #         eps = terminal_eps
+    #     return eps
     
+    def get_eps(self, steps):
+        # return math.exp(-0.008*steps) # Good fo 4x4 maze
+        return math.exp(-0.004*steps)
 
+    
     @tf.function
     def update_main_model(self, state_batch, action_batch, reward_batch, next_state_batch, game_over_batch, next_state_available_actions_batch):
         """Update main q network by experience replay method.
@@ -274,6 +281,38 @@ class DQN:
                 writer.writerow(headers)
             writer.writerow(data)
 
+    def save_plots(self):
+        data_folder_path = 'data_plots'
+        os.makedirs(data_folder_path, exist_ok = True)
+        rwd_fig = plt.figure()
+        # plt.clf()
+        # plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst, color='blue', linestyle='-', label='Lines')
+        plt.plot([i for i in range(0, len(self.episode_rewards_lst))], self.episode_rewards_lst)
+        plt.xlabel('Episodes')
+        plt.ylabel('Rewards')
+        plt.savefig(os.path.join(data_folder_path + '/rewards.png'))
+        pickle.dump(rwd_fig, open(data_folder_path + '/rewards.pickle', 'wb'))
+        plt.clf()
+
+        # plt.plot(total_step_loss_lst, loss_lst, color='blue', linestyle='-', label='Lines')
+        loss_fig = plt.figure()
+        plt.plot(self.total_step_loss_lst, self.loss_lst)
+        plt.xlabel('Steps')
+        plt.ylabel('Loss')
+        plt.savefig(os.path.join(data_folder_path + '/loss.png'))
+        pickle.dump(loss_fig, open(data_folder_path + '/loss.pickle', 'wb'))
+        plt.clf()
+
+        # plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst, color='blue', linestyle='-', label='Lines')
+        expl_fig = plt.figure()
+        plt.plot([i for i in range(0, len(self.expl_rate_lst))], self.expl_rate_lst)
+        plt.xlabel('Steps')
+        plt.ylabel('Expl_rate')
+        plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
+        pickle.dump(expl_fig, open(data_folder_path + '/expl_rate.pickle', 'wb'))
+        plt.clf()
+    
+
     # def animate(self):
     #     data = pd.read_csv('data.csv')
     #     x = data['Episode']
@@ -312,10 +351,9 @@ class DQN:
             episode_step = 0
             episode_score = 0.0
             game_over = False
-            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
+            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1).
             init_state = maze.reset(episode_step)
             state = self.preprocess_image(episode_step, init_state)
-
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 expl_rate = self.get_eps(total_step)
@@ -356,10 +394,11 @@ class DQN:
                     maze.produce_video(str(episode), 'training_episode_videos')
                     # break
             if episode == 0:
-                self.save_to_csv([episode, episode_score, episode_step], "training_data.csv", ["Episode", "Reward", "Steps"])
+                self.save_to_csv([episode, episode_score, episode_step, expl_rate], "training_data.csv", ["Episode", "Reward", "Steps", "Expl Rate"])
             else:
-                self.save_to_csv([episode, episode_score, episode_step], "training_data.csv", None)
+                self.save_to_csv([episode, episode_score, episode_step, expl_rate], "training_data.csv", None)
         self.model.save_weights("model_weights.h5")
+        self.save_plots()
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
             # plot_thread.start()
                 # print("total steps: ", total_step)
@@ -420,3 +459,18 @@ class DQN:
                     else:
                         self.save_to_csv([episode, episode_score, episode_step, status], "gameplay_data.csv", None)
                     maze.produce_video(str(episode), 'gameplay_episode_videos')
+
+def show_pickle_figure(pickle_file_path: str):
+    figure = pickle.load(open(pickle_file_path, 'rb'))
+    figure.axes[0].lines[0].get_data()
+    figure.show() # Show the figure, edit it, etc.!
+    plt.show(block=True)
+
+def save_pickle_to_csv(save_csv_file_path: str, pickle_file_path:str):
+    figure = pickle.load(open(pickle_file_path, 'rb'))
+    data = figure.axes[0].lines[0].get_data()
+    lst = list(zip(data[0], data[1]))
+    with open(save_csv_file_path+'.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['x-values', 'y-values'])
+        writer.writerows(lst)
