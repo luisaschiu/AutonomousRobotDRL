@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 from collections import deque
 import random
-from class_maze import Maze
+from class_maze import Maze, deleteGifs
 from tensorflow.keras import initializers, models, optimizers, metrics, losses
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input, Rescaling
 import cv2 as cv
@@ -342,10 +342,10 @@ class DQN:
     #     loaded_model.load_weights("model.h5")  # Load weights separately
     #     print("Loaded model from disk")
 
-    def train_agent(self, maze: Maze, num_episodes = 200):
+    def train_agent_static(self, maze: Maze, num_episodes = 200):
         loss = 0
         total_step = 0
-        maze.deleteGifs()
+        deleteGifs()
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             episode_step = 0
@@ -413,10 +413,85 @@ class DQN:
                 #     break
                 # If episode does not terminate... continue onto last lines of pseudocode
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
-    # def play_game(self, maze:Maze, num_episodes, load_weights:bool):
     
-    # NOTE: Look into when image folders or gifs are being re-written, maybe make a separate game play folder to include all of the gifs and robot_steps?
-    def play_game(self, maze:Maze, num_episodes, load_weight_dir=None):
+    def train_agent_dynamic(self, maze_lst, num_episodes = 200):
+        loss = 0
+        total_step = 0
+        deleteGifs()
+        for episode in range(num_episodes):
+            self.cur_stacked_images.clear()
+            episode_step = 0
+            episode_score = 0.0
+            game_over = False
+            maze = random.choice(maze_lst)
+            # maze.show()
+            index_of_maze = maze_lst.index(maze)
+            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1).
+            init_state = maze.reset(episode_step)
+            state = self.preprocess_image(episode_step, init_state)
+            while not game_over:
+                # From Google article pseudocode line 5: With probability epsilon select a random action a_t
+                expl_rate = self.get_eps(total_step)
+                self.expl_rate_lst.append(expl_rate)
+                available_actions = maze.get_available_actions()
+                print(available_actions)
+                action = self.get_action(state, available_actions, expl_rate)
+                print(action)
+                total_step += 1
+                episode_step += 1
+                # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
+                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                episode_score += reward
+                next_state_available_actions = maze.get_available_actions()
+                # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
+                # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
+                next_state = self.preprocess_image(episode_step, next_state_img)
+                # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
+                self.remember(state, action, reward, next_state, game_over, next_state_available_actions)
+                state = next_state
+                if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
+                    print("Generating minibatch and updating main model")
+                    state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
+                    # print("next_state_available_actions_batch")
+                    # print(next_state_available_actions_batch)
+                    loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
+                    self.total_step_loss_lst.append(total_step)
+                    self.loss_lst.append(loss.numpy())
+                    # print('Loss: ' + str(loss.numpy()))
+                if episode_step == self.max_steps_per_episode:
+                    game_over = True
+                # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
+                if ((total_step % self.update_target_network_freq == 0) and (total_step > self.replay_start_size)):
+                    self.update_target_model()
+                # From Google article pseudocode line 10: if episode terminates at step j+1
+                if game_over:
+                    self.episode_rewards_lst.append(episode_score)
+                    print('Game Over.')
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    maze.produce_video(str(episode), 'training_episode_videos')
+                    # break
+            if episode == 0:
+                self.save_to_csv([episode, episode_score, episode_step, expl_rate, index_of_maze], "training_data.csv", ["Episode", "Reward", "Steps", "Expl Rate", "Maze Num"])
+            else:
+                self.save_to_csv([episode, episode_score, episode_step, expl_rate, index_of_maze], "training_data.csv", None)
+        self.model.save_weights("model_weights.h5")
+        self.save_plots()
+            # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
+            # plot_thread.start()
+                # print("total steps: ", total_step)
+                    
+                # if game_over == 'win':
+                #     self.win_history.append(1)
+                #     print('win') #TODO: Finish this print statement to provide more information
+                #     break
+                # elif game_over == 'lose':
+                #     self.win_history.append(0)
+                #     print('lose')
+                #     break
+                # If episode does not terminate... continue onto last lines of pseudocode
+                # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
+
+    def play_game_static(self, maze:Maze, num_episodes, load_weight_dir=None):
         print("Playing game...")
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
@@ -460,10 +535,56 @@ class DQN:
                         self.save_to_csv([episode, episode_score, episode_step, status], "gameplay_data.csv", None)
                     maze.produce_video(str(episode), 'gameplay_episode_videos')
 
+    def play_game_dynamic(self, maze_lst, num_episodes, load_weight_dir=None):
+        print("Playing game...")
+        if load_weight_dir is not None:
+            self.model.load_weights(load_weight_dir)
+        total_step = 0
+        deleteGifs()
+        for episode in range(num_episodes):
+            status = None
+            self.cur_stacked_images.clear()
+            episode_step = 0
+            episode_score = 0.0
+            game_over = False
+            maze = random.choice(maze_lst)
+            index_of_maze = maze_lst.index(maze)
+            # Initialize sequence s_1 = {x1} and preprocessed sequence phi_1 = phi(s_1). NOTE: We do not downsize our image in preprocessing just yet.
+            init_state = maze.reset(episode_step)
+            state = self.preprocess_image(episode_step, init_state)
+            while not game_over:
+                available_actions = maze.get_available_actions()
+                action = self.get_action(state, available_actions, 0.01)
+                total_step += 1
+                episode_step += 1
+                # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
+                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                episode_score += reward
+                # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
+                # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
+                next_state = self.preprocess_image(episode_step, next_state_img)
+                state = next_state
+                if episode_step == self.max_steps_per_episode:
+                    status = 0
+                    game_over = True
+                if game_over:
+                    if status == 0:
+                        print('Game Over. LOSE!')
+                    else:
+                        status = 1
+                        print('Game Over. WIN!')
+                    print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
+                    # save data to .csv file
+                    if episode == 0:
+                        self.save_to_csv([episode, episode_score, episode_step, status, index_of_maze], "gameplay_data.csv", ["Episode", "Reward", "Steps", "Game Status", "Maze Num"])
+                    else:
+                        self.save_to_csv([episode, episode_score, episode_step, status, index_of_maze], "gameplay_data.csv", None)
+                    maze.produce_video(str(episode), 'gameplay_episode_videos')
+
 def show_pickle_figure(pickle_file_path: str):
     figure = pickle.load(open(pickle_file_path, 'rb'))
     figure.axes[0].lines[0].get_data()
-    figure.show() # Show the figure, edit it, etc.!
+    figure.show()
     plt.show(block=True)
 
 def save_pickle_to_csv(save_csv_file_path: str, pickle_file_path:str):

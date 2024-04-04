@@ -19,13 +19,13 @@ class Maze:
         # NOTE: This is assuming the maze is a square:
         # print(self.maze.shape)
         # print(start_pt)
-        if start_pt[0] < 0.0 or start_pt[0] > (self.maze.shape[0]-1) or start_pt[1] < 0.0 or start_pt[1] > (self.maze.shape[0]-1):
+        if start_pt[0] < 0.0 or start_pt[0] > (self.maze.shape[0]-1) or start_pt[1] < 0.0 or start_pt[1] > (self.maze.shape[1]-1):
         # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
             raise MazeError("Defined start point is out of boundaries. Ensure you choose a valid start point within the maze boundaries.")
         elif self.maze[start_pt[0], start_pt[1]] == 1.0:
             raise MazeError("Defined start point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.start_pt = start_pt
-        if goal_pt[0] < 0.0 or goal_pt[0] > (self.maze.shape[0]-1) or goal_pt[1] < 0.0 or goal_pt[1] > (self.maze.shape[0]-1):
+        if goal_pt[0] < 0.0 or goal_pt[0] > (self.maze.shape[0]-1) or goal_pt[1] < 0.0 or goal_pt[1] > (self.maze.shape[1]-1):
         # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
             raise MazeError("Defined goal point is out of boundaries. Ensure you choose a valid goal point within the maze boundaries.")
         elif self.maze[goal_pt[0], goal_pt[1]] == 1.0:
@@ -110,10 +110,7 @@ class Maze:
         cv.imshow('Frame', image)
         cv.waitKey(1)
         return image
-    
-    def deleteGifs(self):
-        for filename in glob.glob('gifs/*.gif'):
-            os.remove(filename)
+
         
     def reset(self, time_step):
         for filename in glob.glob('robot_steps/*.jpg'):
@@ -302,6 +299,10 @@ class Maze:
         gif_name = folderPath+ '/' + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
+
+def deleteGifs():
+        for filename in glob.glob('gifs/*.gif'):
+            os.remove(filename)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):
