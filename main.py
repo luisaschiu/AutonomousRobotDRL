@@ -67,15 +67,10 @@ def data_thread():
         
 if __name__ == "__main__":
     # Using a 4x4 maze:
-    maze_array1 = np.array(
+    maze_array = np.array(
     [[0.0, 1.0, 1.0, 0.0],
     [0.0, 0.0, 0.0, 0.0],
     [1.0, 1.0, 0.0, 1.0],
-    [0.0, 1.0, 0.0, 0.0]])
-    maze_array2 = np.array(
-    [[0.0, 1.0, 1.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 1.0],
     [0.0, 1.0, 0.0, 0.0]])
     maze_size = 4
     # # Using a 8x8 maze:
@@ -91,27 +86,19 @@ if __name__ == "__main__":
     # maze_size = 8
 
     marker_filepath = "images/marker8.jpg"
-    maze1 = Maze(maze_array1, marker_filepath, (0,0), (3,3), 180)
-    maze2 = Maze(maze_array2, marker_filepath, (0,0), (3,3), 180)
-    # maze1.show()
-    # maze2.show()
-    maze_lst = [maze1, maze2]
-    network = DQN((120, 120), maze_size)
-    # network.train_agent_dynamic(maze_lst, 200)
-    network.train_agent_static(maze1, 200)
+    maze = Maze(maze_array, marker_filepath, (1,0), (3,3), 180)
+    maze.show()
+    # network = DQN((120, 120), maze_size)
+    # network.train_agent(maze, 200)
 
-    answer = input("Ready to play the game? y/n: ")
-    # Create a new object, load weights, and see if it works?
-    if answer == "y":
-        new_network = DQN((120, 120), maze_size)
-        new_network.play_game_dynamic(maze_lst, 100, "model_weights.h5")
-    if answer == "n":
-        print("Program Exited.")
+    # answer = input("Ready to play the game? y/n: ")
+    # # Create a new object, load weights, and see if it works?
+    # if answer == "y":
+    #     new_network = DQN((120, 120), maze_size)
+    #     new_network.play_game(maze, 100, "model_weights.h5")
+    # if answer == "n":
+    #     print("Program Exited.")
 
-
-    # # Test evaluation of post training data
-    # show_pickle_figure('data_plots/' + 'rewards.pickle')
-    # save_pickle_to_csv('data_plots/test', 'data_plots/' + 'rewards.pickle')
 
     # # Testing for saving and loading weights
     # original_weights = network.model.get_weights()

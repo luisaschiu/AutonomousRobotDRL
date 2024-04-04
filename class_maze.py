@@ -19,13 +19,13 @@ class Maze:
         # NOTE: This is assuming the maze is a square:
         # print(self.maze.shape)
         # print(start_pt)
-        if start_pt[0] < 0.0 or start_pt[0] > (self.maze.shape[0]-1) or start_pt[1] < 0.0 or start_pt[1] > (self.maze.shape[1]-1):
+        if start_pt[0] < 0.0 or start_pt[0] > (self.maze.shape[0]-1) or start_pt[1] < 0.0 or start_pt[1] > (self.maze.shape[0]-1):
         # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
             raise MazeError("Defined start point is out of boundaries. Ensure you choose a valid start point within the maze boundaries.")
         elif self.maze[start_pt[0], start_pt[1]] == 1.0:
             raise MazeError("Defined start point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.start_pt = start_pt
-        if goal_pt[0] < 0.0 or goal_pt[0] > (self.maze.shape[0]-1) or goal_pt[1] < 0.0 or goal_pt[1] > (self.maze.shape[1]-1):
+        if goal_pt[0] < 0.0 or goal_pt[0] > (self.maze.shape[0]-1) or goal_pt[1] < 0.0 or goal_pt[1] > (self.maze.shape[0]-1):
         # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
             raise MazeError("Defined goal point is out of boundaries. Ensure you choose a valid goal point within the maze boundaries.")
         elif self.maze[goal_pt[0], goal_pt[1]] == 1.0:
@@ -57,7 +57,7 @@ class Maze:
         imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
         # TODO: Make zoom relative to maze size above, or else changing to a 
         # larger maze may make the marker image too large compared to small maze squares
-        ab = AnnotationBbox(imagebox, (self.robot_location[1], self.robot_location[0]), frameon = False)
+        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
         ax.add_artist(ab)
         # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
         # Color the traversed locations
@@ -89,7 +89,7 @@ class Maze:
         imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
         # TODO: Make zoom relative to maze size above, or else changing to a 
         # larger maze may make the marker image too large compared to small maze squares
-        ab = AnnotationBbox(imagebox, (self.robot_location[1], self.robot_location[0]), frameon = False)
+        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
         ax.add_artist(ab)
         # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
         # Color the traversed locations
@@ -305,11 +305,6 @@ def deleteGifs():
             os.remove(filename)
 
 class ActionError(Exception):
-    def __init__(self, message="An error occurred"):
-        self.message = message
-        super().__init__(self.message)
-
-class MazeError(Exception):
     def __init__(self, message="An error occurred"):
         self.message = message
         super().__init__(self.message)
