@@ -126,8 +126,8 @@ class DQN:
     #     return eps
     
     def get_eps(self, steps):
-        # return math.exp(-0.008*steps) # Good fo 4x4 maze
-        return math.exp(-0.004*steps)
+        return math.exp(-0.008*steps) # Good for 4x4 maze
+    #     return math.exp(-0.004*steps)
 
     
     @tf.function
@@ -434,9 +434,9 @@ class DQN:
                 expl_rate = self.get_eps(total_step)
                 self.expl_rate_lst.append(expl_rate)
                 available_actions = maze.get_available_actions()
-                print(available_actions)
+                # print(available_actions)
                 action = self.get_action(state, available_actions, expl_rate)
-                print(action)
+                # print(action)
                 total_step += 1
                 episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1

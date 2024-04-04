@@ -67,10 +67,15 @@ def data_thread():
         
 if __name__ == "__main__":
     # Using a 4x4 maze:
-    maze_array = np.array(
+    maze_array1 = np.array(
     [[0.0, 1.0, 1.0, 0.0],
     [0.0, 0.0, 0.0, 0.0],
     [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    maze_array2 = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 1.0],
     [0.0, 1.0, 0.0, 0.0]])
     maze_size = 4
     # # Using a 8x8 maze:
@@ -86,18 +91,21 @@ if __name__ == "__main__":
     # maze_size = 8
 
     marker_filepath = "images/marker8.jpg"
-    maze = Maze(maze_array, marker_filepath, (1,0), (3,3), 180)
-    maze.show()
-    # network = DQN((120, 120), maze_size)
-    # network.train_agent(maze, 200)
+    maze1 = Maze(maze_array1, marker_filepath, (0,0), (3,3), 180)
+    maze2 = Maze(maze_array2, marker_filepath, (0,0), (3,3), 180)
+    # maze.show()
+    network = DQN((120, 120), maze_size)
+    network.train_agent_static(maze1, 200)
+    # network.train_agent_dynamic([maze1, maze2], 200)
 
-    # answer = input("Ready to play the game? y/n: ")
-    # # Create a new object, load weights, and see if it works?
-    # if answer == "y":
-    #     new_network = DQN((120, 120), maze_size)
-    #     new_network.play_game(maze, 100, "model_weights.h5")
-    # if answer == "n":
-    #     print("Program Exited.")
+    answer = input("Ready to play the game? y/n: ")
+    # Create a new object, load weights, and see if it works?
+    if answer == "y":
+        new_network = DQN((120, 120), maze_size)
+        new_network.play_game_static(maze1, 100, "model_weights.h5")
+        # new_network.play_game_dynamic([maze1, maze2], 100, "model_weights.h5")
+    if answer == "n":
+        print("Program Exited.")
 
 
     # # Testing for saving and loading weights

@@ -31,11 +31,9 @@ class Maze:
         elif self.maze[goal_pt[0], goal_pt[1]] == 1.0:
             raise MazeError("Defined goal point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.goal_pt = goal_pt
-        # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
         # self.min_reward = -0.5*maze.size
         self.total_reward = 0
-#        self.traversed = np.array([]) # creates an empty numpy array
 
     def show(self):
         # plt.grid(True)
@@ -303,6 +301,11 @@ class Maze:
 def deleteGifs():
         for filename in glob.glob('gifs/*.gif'):
             os.remove(filename)
+
+class MazeError(Exception):
+    def __init__(self, message="An error occurred"):
+        self.message = message
+        super().__init__(self.message)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):
