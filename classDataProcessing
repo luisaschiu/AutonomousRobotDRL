@@ -1,0 +1,35 @@
+import csv
+import pickle
+import matplotlib.pyplot as plt
+
+class DataProcessing:
+    def save_to_csv(self, data, file_path, headers=None):
+        """
+        Save data to a CSV file.
+
+        Parameters:
+            data: Data to be saved.
+            file_path (str): Path to the CSV file.
+            headers (list, optional): List of header names. Defaults to None.
+        """
+        mode = 'w' if headers else 'a'  # Use 'w' mode initially if headers are provided, otherwise use 'a' mode
+        # print("mode: ", mode)
+        with open(file_path, mode, newline="") as file:
+            writer = csv.writer(file)
+            if headers:
+                writer.writerow(headers)
+            writer.writerow(data)
+
+    def show_pickle_figure(self, pickle_file_path):
+        figure = pickle.load(open(pickle_file_path, 'rb'))
+        figure.axes[0].lines[0].get_data()
+        figure.show() # Show the figure, edit it, etc.!
+        plt.show(block=True)
+
+    def save_pickle_to_csv(self, save_csv_file_path, figure):
+        data = figure.axes[0].lines[0].get_data()
+        lst = list(zip(data[0], data[1]))
+        with open(save_csv_file_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['x-values', 'y-values'])
+            writer.writerows(lst)
