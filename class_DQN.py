@@ -342,10 +342,13 @@ class DQN:
     #     loaded_model.load_weights("model.h5")  # Load weights separately
     #     print("Loaded model from disk")
 
-    def train_agent_static(self, maze: Maze, num_episodes = 200):
+    def train_agent_static(self, maze: Maze, num_episodes = 200, load_weights_path = None):
         loss = 0
         total_step = 0
         deleteGifs()
+        if load_weights_path:
+            print("Loading Weights to continue training...")
+            self.model.load_weights(load_weights_path)
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             episode_step = 0
@@ -356,7 +359,10 @@ class DQN:
             state = self.preprocess_image(episode_step, init_state)
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
-                expl_rate = self.get_eps(total_step)
+                if load_weights_path:
+                    expl_rate = 0.01 #terminal
+                else:
+                    expl_rate = self.get_eps(total_step)
                 self.expl_rate_lst.append(expl_rate)
                 available_actions = maze.get_available_actions()
                 action = self.get_action(state, available_actions, expl_rate)
@@ -414,10 +420,13 @@ class DQN:
                 # If episode does not terminate... continue onto last lines of pseudocode
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
     
-    def train_agent_dynamic(self, maze_lst, num_episodes = 200):
+    def train_agent_dynamic(self, maze_lst, num_episodes = 200, load_weights_path = None):
         loss = 0
         total_step = 0
         deleteGifs()
+        if load_weights_path:
+            print("Loading Weights to continue training...")
+            self.model.load_weights(load_weights_path)
         for episode in range(num_episodes):
             self.cur_stacked_images.clear()
             episode_step = 0
