@@ -361,6 +361,7 @@ class DQN:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
                 if load_weights_path:
                     expl_rate = 0.01 #terminal
+                    print("Expl_rate terminal")
                 else:
                     expl_rate = self.get_eps(total_step)
                 self.expl_rate_lst.append(expl_rate)
@@ -440,7 +441,10 @@ class DQN:
             state = self.preprocess_image(episode_step, init_state)
             while not game_over:
                 # From Google article pseudocode line 5: With probability epsilon select a random action a_t
-                expl_rate = self.get_eps(total_step)
+                if load_weights_path:
+                    expl_rate = 0.01 #terminal
+                else:
+                    expl_rate = self.get_eps(total_step)
                 self.expl_rate_lst.append(expl_rate)
                 available_actions = maze.get_available_actions()
                 # print(available_actions)

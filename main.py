@@ -97,12 +97,15 @@ if __name__ == "__main__":
 
     marker_filepath = "images/marker8.jpg"
     maze1 = Maze(maze_array1, marker_filepath, (0,0), (3,3), 180)
+    maze1.show()
     maze2 = Maze(maze_array2, marker_filepath, (0,0), (3,3), 180)
+    maze2.show()
     maze3 = Maze(maze_array3, marker_filepath, (0,0), (3,3), 180)
+    maze3.show()
     # maze.show()
     network = DQN((120, 120), maze_size)
     # network.train_agent_static(maze1, 200)
-    network.train_agent_dynamic([maze1, maze2, maze3], 200, "model_weights.h5")
+    network.train_agent_dynamic([maze1, maze2, maze3], 800)
 
     answer = input("Ready to play the game? y/n: ")
     # Create a new object, load weights, and see if it works?
