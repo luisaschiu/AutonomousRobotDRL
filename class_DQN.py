@@ -93,41 +93,41 @@ class DQN:
         self.target_model.set_weights(self.model.get_weights())
 
     # NOTE: get_eps function taken from Atari game. Used to calculate epsilon value for epsilon-greedy policy based on an annealing schedule.
-    # def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
-    #     """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
+    def get_eps(self, current_step, terminal_eps=0.01, terminal_frame_factor=25):
+        """Use annealing schedule similar to: https://openai.com/blog/openai-baselines-dqn/ .
 
-    #     Args:
-    #         current_step (int): Number of entire steps agent experienced.
-    #         terminal_eps (float): Final exploration rate arrived at terminal_frame_factor * self.final_exploration_frame.
-    #         terminal_frame_factor (int): Final exploration frame, which is terminal_frame_factor * self.final_exploration_frame.
+        Args:
+            current_step (int): Number of entire steps agent experienced.
+            terminal_eps (float): Final exploration rate arrived at terminal_frame_factor * self.final_exploration_frame.
+            terminal_frame_factor (int): Final exploration frame, which is terminal_frame_factor * self.final_exploration_frame.
 
-    #     Returns:
-    #         eps (float): Calculated epsilon for ε-greedy at current_step.
-    #     """
-    #     terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
-    #     # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
-    #     if current_step < self.replay_start_size:
-    #         # print("In if statement")
-    #         eps = self.init_exploration_rate
-    #     # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
-    #     # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
-    #     elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
-    #         # print("In 1st elif statement")
-    #         eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
-    #     # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
-    #     elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
-    #         # print("In 2nd elif statement")
-    #         eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
-    #     else:
-    #         # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
-    #         # there is a very low chance of exploration.
-    #         # print("In else statement")
-    #         eps = terminal_eps
-    #     return eps
+        Returns:
+            eps (float): Calculated epsilon for ε-greedy at current_step.
+        """
+        terminal_eps_frame = self.final_exploration_frame * terminal_frame_factor
+        # NOTE: self.replay_start_size is huge, about 10,000. May need to change this, or else we will want to explore for a long time.
+        if current_step < self.replay_start_size:
+            # print("In if statement")
+            eps = self.init_exploration_rate
+        # If the robot has taken enough steps before replaying old memories and updating the main model (greater than or equal to 
+        # self.replay_start_size) and it is not at the last frame in which we want it to explore less.
+        elif self.replay_start_size <= current_step and current_step < self.final_exploration_frame:
+            # print("In 1st elif statement")
+            eps = (self.final_exploration_rate - self.init_exploration_rate) / (self.final_exploration_frame - self.replay_start_size) * (current_step - self.replay_start_size) + self.init_exploration_rate
+        # If the robot has taken enough steps as it gets closer to the final frames before it needs to be terminated to prevent over exploring
+        elif self.final_exploration_frame <= current_step and current_step < terminal_eps_frame:
+            # print("In 2nd elif statement")
+            eps = (terminal_eps - self.final_exploration_rate) / (terminal_eps_frame - self.final_exploration_frame) * (current_step - self.final_exploration_frame) + self.final_exploration_rate
+        else:
+            # Right now, self.final_exploration_rate = 0.01. terminal_eps is 0.01. This means epsilon is very low, and 
+            # there is a very low chance of exploration.
+            # print("In else statement")
+            eps = terminal_eps
+        return eps
     
-    def get_eps(self, steps):
-        return math.exp(-0.008*steps) # Good for 4x4 maze
-    #     return math.exp(-0.004*steps)
+    # def get_eps(self, steps):
+    #     return math.exp(-0.008*steps) # Good for 4x4 maze
+    # #     return math.exp(-0.004*steps)
 
     
     @tf.function
@@ -496,7 +496,7 @@ class DQN:
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
         total_step = 0
-        maze.deleteGifs()
+        deleteGifs()
         for episode in range(num_episodes):
             status = None
             self.cur_stacked_images.clear()
