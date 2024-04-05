@@ -1,7 +1,9 @@
 /robot_steps
 /training_episode_videos
 /gameplay_episode_videos
-/data.csv
+/training_data.csv
+/gameplay_data.csv
+/model_weights.h5
 /data_plots
 /autotest/autotest_results
 /autotest/robot_steps

@@ -1,6 +1,6 @@
 import numpy as np
 from class_maze import Maze
-from class_DQN import DQN
+from class_DQN import DQN, show_pickle_figure, save_pickle_to_csv
 import matplotlib.pyplot as plt
 from itertools import count
 import random
@@ -10,6 +10,7 @@ import pandas as pd
 import os
 import threading
 import time
+import pickle
 
 def save_to_csv(data, file_path, headers=None):
     """
@@ -66,56 +67,52 @@ def data_thread():
         
 if __name__ == "__main__":
     # Using a 4x4 maze:
+    maze_array1 = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [1.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    maze_array2 = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0, 0.0]])
+    maze_array3 = np.array(
+    [[0.0, 1.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 1.0, 1.0],
+    [0.0, 0.0, 0.0, 0.0]])
+    maze_size = 4
+    # # Using a 8x8 maze:
     # maze_array = np.array(
-    # [[0.0, 1.0, 1.0, 0.0],
-    # [0.0, 0.0, 0.0, 0.0],
-    # [1.0, 1.0, 0.0, 1.0],
-    # [0.0, 1.0, 0.0, 0.0]])
-    # Using a 8x8 maze:
-    maze_array = np.array(
-    [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
-    [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
-    [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
-    [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+    # [[0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0],
+    # [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0],
+    # [1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0],
+    # [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0],
+    # [0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0],
+    # [0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0],
+    # [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0],
+    # [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]])
+    # maze_size = 8
+
     marker_filepath = "images/marker8.jpg"
-    maze = Maze(maze_array, marker_filepath, (0,0), (7,7), 180)
-    network = DQN((120, 120))
-    network.train_agent(maze, 200)
-    rewards_lst = network.episode_rewards_lst
-    total_step_loss_lst = network.total_step_loss_lst
-    loss_lst = network.loss_lst
-    expl_rate_lst = network.expl_rate_lst
-    
-    data_folder_path = 'data_plots'
-    os.makedirs(data_folder_path, exist_ok = True)
-    # plt.clf()
-    plt.plot([i for i in range(0, len(rewards_lst))], rewards_lst, color='blue', linestyle='-', marker='o', label='Lines')
-    plt.xlabel('Episodes')
-    plt.ylabel('Rewards')
-    plt.savefig(os.path.join(data_folder_path + '/rewards.png'))
-    plt.clf()
-
-    plt.plot(total_step_loss_lst, loss_lst, color='blue', linestyle='-', marker='o', label='Lines')
-    plt.xlabel('Steps')
-    plt.ylabel('Loss')
-    plt.savefig(os.path.join(data_folder_path + '/loss.png'))
-    plt.clf()
-
-    plt.plot([i for i in range(0, len(expl_rate_lst))], expl_rate_lst, color='blue', linestyle='-', marker='o', label='Lines')
-    plt.xlabel('Steps')
-    plt.ylabel('Expl_rate')
-    plt.savefig(os.path.join(data_folder_path + '/expl_rate.png'))
-    plt.clf()
+    maze1 = Maze(maze_array1, marker_filepath, (0,0), (3,3), 180)
+    maze1.show()
+    maze2 = Maze(maze_array2, marker_filepath, (0,0), (3,3), 180)
+    maze2.show()
+    maze3 = Maze(maze_array3, marker_filepath, (0,0), (3,3), 180)
+    maze3.show()
+    # maze.show()
+    network = DQN((120, 120), maze_size)
+    # network.train_agent_static(maze1, 200)
+    network.train_agent_dynamic([maze1, maze2, maze3], 800)
 
     answer = input("Ready to play the game? y/n: ")
     # Create a new object, load weights, and see if it works?
     if answer == "y":
-        new_network = DQN((120, 120))
-        new_network.play_game(maze, 10, "model_weights.h5")
+        new_network = DQN((120, 120), maze_size)
+        # new_network.play_game_static(maze1, 100, "model_weights.h5")
+        new_network.play_game_dynamic([maze1, maze2, maze3], 100, "model_weights.h5")
     if answer == "n":
         print("Program Exited.")
 

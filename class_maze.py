@@ -16,13 +16,24 @@ class Maze:
         self.init_orientation = start_orientation
         self.robot_orientation = start_orientation//90
         self.marker = mpimg.imread(marker_filepath)
+        # NOTE: This is assuming the maze is a square:
+        # print(self.maze.shape)
+        # print(start_pt)
+        if start_pt[0] < 0.0 or start_pt[0] > (self.maze.shape[0]-1) or start_pt[1] < 0.0 or start_pt[1] > (self.maze.shape[0]-1):
+        # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
+            raise MazeError("Defined start point is out of boundaries. Ensure you choose a valid start point within the maze boundaries.")
+        elif self.maze[start_pt[0], start_pt[1]] == 1.0:
+            raise MazeError("Defined start point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.start_pt = start_pt
+        if goal_pt[0] < 0.0 or goal_pt[0] > (self.maze.shape[0]-1) or goal_pt[1] < 0.0 or goal_pt[1] > (self.maze.shape[0]-1):
+        # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
+            raise MazeError("Defined goal point is out of boundaries. Ensure you choose a valid goal point within the maze boundaries.")
+        elif self.maze[goal_pt[0], goal_pt[1]] == 1.0:
+            raise MazeError("Defined goal point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.goal_pt = goal_pt
-        # NOTE: Might not need self.traversed anymore, since class_DQN is taking care of the history/memorizing episodes
         self.traversed = []
         # self.min_reward = -0.5*maze.size
         self.total_reward = 0
-#        self.traversed = np.array([]) # creates an empty numpy array
 
     def show(self):
         # plt.grid(True)
@@ -35,6 +46,8 @@ class Maze:
         ax.set_yticks([])
         # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
         # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        self.maze[self.start_pt[0], self.start_pt[1]] = 0.3
+        self.maze[self.goal_pt[0], self.goal_pt[1]] = 0.6
         # Overlay marker onto the robot location
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
@@ -65,6 +78,8 @@ class Maze:
         ax.set_yticks([])
         # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
         # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        self.maze[self.start_pt[0], self.start_pt[1]] = 0.3
+        self.maze[self.goal_pt[0], self.goal_pt[1]] = 0.6
         # Overlay marker onto the robot location
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
@@ -93,10 +108,7 @@ class Maze:
         cv.imshow('Frame', image)
         cv.waitKey(1)
         return image
-    
-    def deleteGifs(self):
-        for filename in glob.glob('gifs/*.gif'):
-            os.remove(filename)
+
         
     def reset(self, time_step):
         for filename in glob.glob('robot_steps/*.jpg'):
@@ -247,9 +259,10 @@ class Maze:
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
             return -0.6
+            # return -0.25
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
-            return -0.06
+            return -0.3
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -284,6 +297,15 @@ class Maze:
         gif_name = folderPath+ '/' + (GIF_DIGITS - len(episodeNum)) * "0" + episodeNum + ".gif"
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
+
+def deleteGifs():
+    for filename in glob.glob('gifs/*.gif'):
+        os.remove(filename)
+
+class MazeError(Exception):
+    def __init__(self, message="An error occurred"):
+        self.message = message
+        super().__init__(self.message)
 
 class ActionError(Exception):
     def __init__(self, message="An error occurred"):
