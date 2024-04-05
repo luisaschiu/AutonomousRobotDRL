@@ -36,6 +36,8 @@ class Maze:
         self.total_reward = 0
 
     def show(self):
+        # print(self.robot_location)
+        # print(self.start_pt)
         # plt.grid(True)
         nrows, ncols = self.maze.shape
         # print(self.maze.shape)
@@ -46,8 +48,8 @@ class Maze:
         ax.set_yticks([])
         # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
         # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
-        self.maze[self.start_pt[0], self.start_pt[1]] = 0.3
-        self.maze[self.goal_pt[0], self.goal_pt[1]] = 0.6
+        self.maze[self.start_pt[1], self.start_pt[0]] = 0.3
+        self.maze[self.goal_pt[1], self.goal_pt[0]] = 0.6
         # Overlay marker onto the robot location
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker
@@ -78,8 +80,8 @@ class Maze:
         ax.set_yticks([])
         # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
         # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
-        self.maze[self.start_pt[0], self.start_pt[1]] = 0.3
-        self.maze[self.goal_pt[0], self.goal_pt[1]] = 0.6
+        self.maze[self.start_pt[1], self.start_pt[0]] = 0.3
+        self.maze[self.goal_pt[1], self.goal_pt[0]] = 0.6
         # Overlay marker onto the robot location
         # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
         marker = self.marker

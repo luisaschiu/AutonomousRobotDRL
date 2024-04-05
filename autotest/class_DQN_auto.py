@@ -26,7 +26,6 @@ class DQN_AUTO:
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
-        # self.final_exploration_frame = 12  This performed better than the past
         self.final_exploration_frame = final_exploration_frame
         self.learning_rate = 0.001
         self.minibatch_size = 32
