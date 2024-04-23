@@ -197,7 +197,8 @@ class Maze:
                     self.robot_orientation = expected_angle//90
                 self.traversed.append((robot_x, robot_y))
                 self.robot_location = (robot_x+1, robot_y)
-                
+
+
     def get_available_actions(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         valid_actions = []
@@ -266,6 +267,27 @@ class Maze:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             return -0.3
     
+    def manhattan_distance(self, start_x, start_y, end_x, end_y):
+        # Calculate Manhattan distance between two grid cells
+        return abs(start_x - end_x) + abs(start_y - end_y)
+    
+    def get_reward_heuristics(self):
+        # TODO: Look into penalty reward for traversed locations and advancing to new spot (maybe swap or alter)
+        # NOTE: Do I account for maze edges or walls here?
+        robot_x, robot_y = self.robot_location[0], self.robot_location[1]
+        # Robot reached the goal
+        if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
+            return 10
+        # Robot has already visited this spot
+        if (robot_x, robot_y) in self.traversed:
+            return -0.6
+            # return -0.25
+        else:
+            # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
+            heuristic = self.manhattan_distance(robot_x, robot_y, self.goal_pt[0], self.goal_pt[1])
+            norm_heuristic = heuristic/self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1])
+            return -0.3*norm_heuristic
+    
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
         # If rewards value is less than the minimum rewards allowed
@@ -285,6 +307,15 @@ class Maze:
     def take_action(self, action: str, time_step):
         self.move_robot(action)
         reward = self.get_reward()
+        self.total_reward += reward
+        game_over = self.game_over()
+        # self.time_step += 1
+        new_state_img = self.generate_img(time_step)
+        return (new_state_img, reward, game_over)
+    
+    def take_action_heuristics(self, action: str, time_step):
+        self.move_robot(action)
+        reward = self.get_reward_heuristics()
         self.total_reward += reward
         game_over = self.game_over()
         # self.time_step += 1

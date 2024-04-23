@@ -521,6 +521,20 @@ class DQN:
             state = self.preprocess_image(episode_step, init_state)
             while not game_over:
                 available_actions = maze.get_available_actions()
+
+                #Testing for overestimation bias
+                array=self.model.predict(state)
+                # Copy array so we don't alter the original q-value array in case we want to look at it
+                # print(array)
+                masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
+                # print(masked_qval_array)
+                max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
+
+                if episode_step == 0 and episode == 0:
+                        self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", ["EPISODE", "UP", "DOWN", "LEFT", "RIGHT", "MAX Q-VAL"])
+                else:
+                    self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", None)
+                
                 action = self.get_action(state, available_actions, 0.01)
                 total_step += 1
                 episode_step += 1

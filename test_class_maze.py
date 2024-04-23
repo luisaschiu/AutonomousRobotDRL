@@ -1,6 +1,5 @@
 import numpy as np
 from class_maze import Maze
-import AruCo_functions
 import cv2 as cv
 import os
 import glob
@@ -26,29 +25,30 @@ maze.generate_img(0)
 
 init= maze.reset(0)
 
-print(maze.get_available_actions())
+print(maze.get_reward_heuristics())
 # print(maze.traversed)
 maze.take_action("DOWN", 1)
-print(maze.get_available_actions())
+print(maze.get_reward_heuristics())
 # # print(maze.traversed)
 maze.take_action( "RIGHT", 2)
-print(maze.get_available_actions())
+print(maze.get_reward_heuristics())
 # # print(maze.traversed)
 maze.take_action("RIGHT", 3)
-print(maze.get_available_actions())
+print(maze.get_reward_heuristics())
 # # print(maze.traversed)
-# maze.take_action("DOWN", 4)
-# print(maze.get_available_actions())
+maze.take_action("DOWN", 4)
+print(maze.get_reward_heuristics())
 # # print(maze.traversed)
-# maze.take_action("DOWN", 5)
-# print(maze.get_available_actions())
+maze.take_action("DOWN", 5)
+print(maze.get_reward_heuristics())
+maze.take_action("UP", 6)
+print(maze.get_reward_heuristics())
+maze.take_action("DOWN", 7)
+print(maze.get_reward_heuristics())
 # # print(maze.traversed)
-# maze.take_action("RIGHT", 6)
-# print(maze.get_available_actions())
-# maze.reset(0)
-# maze.show()
-# test = maze.reset(8)
-maze.produce_video()
+maze.take_action("RIGHT", 8)
+print(maze.get_reward_heuristics())
+# maze.produce_video()
 
 # Testing AruCo marker angle and location parameters after images are generated
 # images = glob.glob('robot_steps/*.jpg')
