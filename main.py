@@ -142,7 +142,7 @@ if __name__ == "__main__":
     # maze8.show()
     network = DQN((120, 120), maze_size)
     # network.train_agent_static(maze1, 200)
-    network.train_agent_dynamic([maze1, maze2, maze3, maze4, maze5, maze6, maze7, maze8], 2000)
+    network.train_agent_dynamic([maze1, maze2, maze3, maze4, maze5, maze6, maze7, maze8], 3000, heuristics_flag=True)
 
     # answer = input("Ready to play the game? y/n: ")
     # Create a new object, load weights, and see if it works?

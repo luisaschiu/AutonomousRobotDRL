@@ -24,12 +24,12 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = maze_size**3 # nrows^3
+        self.replay_start_size = maze_size**3*8*8 # nrows^3
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  # This performed better than the past
-        self.final_exploration_frame = maze_size*250 # Josh uses: (nrows^3*5)
+        self.final_exploration_frame = maze_size*250*8*2 # Josh uses: (nrows^3*5)
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = maze_size*5 # nrows^2
@@ -342,7 +342,7 @@ class DQN:
     #     loaded_model.load_weights("model.h5")  # Load weights separately
     #     print("Loaded model from disk")
 
-    def train_agent_static(self, maze: Maze, num_episodes = 200, load_weights_path = None):
+    def train_agent_static(self, maze: Maze, num_episodes = 200, load_weights_path = None, heuristics_flag = False):
         loss = 0
         total_step = 0
         deleteGifs()
@@ -370,7 +370,11 @@ class DQN:
                 total_step += 1
                 episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                if heuristics_flag:
+                    (next_state_img, reward, game_over) = maze.take_action_heuristics(action, episode_step)
+                else:
+                    (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+
                 episode_score += reward
                 next_state_available_actions = maze.get_available_actions()
                 # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
@@ -421,7 +425,7 @@ class DQN:
                 # If episode does not terminate... continue onto last lines of pseudocode
                 # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
     
-    def train_agent_dynamic(self, maze_lst, num_episodes = 200, load_weights_path = None):
+    def train_agent_dynamic(self, maze_lst, num_episodes = 200, load_weights_path = None, heuristics_flag = False):
         loss = 0
         total_step = 0
         deleteGifs()
@@ -453,7 +457,10 @@ class DQN:
                 total_step += 1
                 episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                if heuristics_flag:
+                    (next_state_img, reward, game_over) = maze.take_action_heuristics(action, episode_step)
+                else:
+                    (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
                 next_state_available_actions = maze.get_available_actions()
                 # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
@@ -522,7 +529,7 @@ class DQN:
             while not game_over:
                 available_actions = maze.get_available_actions()
 
-                #Testing for overestimation bias
+                # Testing for overestimation bias
                 array=self.model.predict(state)
                 # Copy array so we don't alter the original q-value array in case we want to look at it
                 # print(array)
@@ -531,7 +538,7 @@ class DQN:
                 max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
 
                 if episode_step == 0 and episode == 0:
-                        self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", ["EPISODE", "UP", "DOWN", "LEFT", "RIGHT", "MAX Q-VAL"])
+                    self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", ["EPISODE", "UP", "DOWN", "LEFT", "RIGHT", "MAX Q-VAL"])
                 else:
                     self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", None)
                 
