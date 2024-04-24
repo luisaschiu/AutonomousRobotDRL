@@ -332,7 +332,9 @@ class Maze:
                save_all=True, duration=300, loop=0)
 
 def deleteGifs():
-    for filename in glob.glob('gifs/*.gif'):
+    for filename in glob.glob('gameplay_episode_videos/*.gif'):
+        os.remove(filename)
+    for filename in glob.glob('training_episode_videos/*.gif'):
         os.remove(filename)
 
 class MazeError(Exception):

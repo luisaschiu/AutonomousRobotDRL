@@ -24,12 +24,14 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        self.replay_start_size = maze_size**3*8*8 # nrows^3
+        # self.replay_start_size = maze_size**3*8*8 # nrows^3
+        self.replay_start_size = maze_size**3
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  # This performed better than the past
-        self.final_exploration_frame = maze_size*250*8*2 # Josh uses: (nrows^3*5)
+        # self.final_exploration_frame = maze_size*250*8*2 # Josh uses: (nrows^3*5)
+        self.final_exploration_frame = maze_size*250
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = maze_size*5 # nrows^2
@@ -374,7 +376,6 @@ class DQN:
                     (next_state_img, reward, game_over) = maze.take_action_heuristics(action, episode_step)
                 else:
                     (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
-
                 episode_score += reward
                 next_state_available_actions = maze.get_available_actions()
                 # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
@@ -537,10 +538,10 @@ class DQN:
                 # print(masked_qval_array)
                 max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
 
-                if episode_step == 0 and episode == 0:
-                    self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", ["EPISODE", "UP", "DOWN", "LEFT", "RIGHT", "MAX Q-VAL"])
-                else:
-                    self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", None)
+                # if episode_step == 0 and episode == 0:
+                #     self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", ["EPISODE", "UP", "DOWN", "LEFT", "RIGHT", "MAX Q-VAL"])
+                # else:
+                #     self.save_to_csv([episode, masked_qval_array[0], masked_qval_array[1], masked_qval_array[2], masked_qval_array[3], masked_qval_array[max_val_index]], "q_val.csv", None)
                 
                 action = self.get_action(state, available_actions, 0.01)
                 total_step += 1
