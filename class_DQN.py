@@ -24,14 +24,14 @@ class DQN:
         # From Google article pseudocode line 1: Initialize replay memory D to capacity N
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
-        # self.replay_start_size = maze_size**3*8*8 # nrows^3
-        self.replay_start_size = maze_size**3
+        self.replay_start_size = maze_size**3*8*8 # nrows^3
+        # self.replay_start_size = maze_size**3
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  # This performed better than the past
-        # self.final_exploration_frame = maze_size*250*8*2 # Josh uses: (nrows^3*5)
-        self.final_exploration_frame = maze_size*250
+        self.final_exploration_frame = maze_size*250*8*2 # Josh uses: (nrows^3*5)
+        # self.final_exploration_frame = maze_size*250
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = maze_size*5 # nrows^2
@@ -347,7 +347,7 @@ class DQN:
     def train_agent_static(self, maze: Maze, num_episodes = 200, load_weights_path = None, heuristics_flag = False):
         loss = 0
         total_step = 0
-        deleteGifs()
+        deleteGifs("training")
         if load_weights_path:
             print("Loading Weights to continue training...")
             self.model.load_weights(load_weights_path)
@@ -429,7 +429,7 @@ class DQN:
     def train_agent_dynamic(self, maze_lst, num_episodes = 200, load_weights_path = None, heuristics_flag = False):
         loss = 0
         total_step = 0
-        deleteGifs()
+        deleteGifs("training")
         if load_weights_path:
             print("Loading Weights to continue training...")
             self.model.load_weights(load_weights_path)
@@ -517,7 +517,7 @@ class DQN:
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
         total_step = 0
-        deleteGifs()
+        deleteGifs("gameplay")
         for episode in range(num_episodes):
             status = None
             self.cur_stacked_images.clear()
@@ -575,7 +575,7 @@ class DQN:
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
         total_step = 0
-        deleteGifs()
+        deleteGifs("gameplay")
         for episode in range(num_episodes):
             status = None
             self.cur_stacked_images.clear()

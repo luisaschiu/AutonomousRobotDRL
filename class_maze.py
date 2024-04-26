@@ -280,13 +280,13 @@ class Maze:
             return 10
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
-            return -0.6
+            return -0.7
             # return -0.25
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             heuristic = self.manhattan_distance(robot_x, robot_y, self.goal_pt[0], self.goal_pt[1])
             norm_heuristic = heuristic/self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1])
-            return -0.3*norm_heuristic
+            return -0.5*norm_heuristic
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
@@ -331,11 +331,13 @@ class Maze:
         frame_one.save(gif_name, format="GIF", append_images=frames,
                save_all=True, duration=300, loop=0)
 
-def deleteGifs():
-    for filename in glob.glob('gameplay_episode_videos/*.gif'):
-        os.remove(filename)
-    for filename in glob.glob('training_episode_videos/*.gif'):
-        os.remove(filename)
+def deleteGifs(folder_type: str):
+    if folder_type == "gameplay":
+        for filename in glob.glob('gameplay_episode_videos/*.gif'):
+            os.remove(filename)
+    elif folder_type == "training":
+        for filename in glob.glob('training_episode_videos/*.gif'):
+            os.remove(filename)
 
 class MazeError(Exception):
     def __init__(self, message="An error occurred"):
