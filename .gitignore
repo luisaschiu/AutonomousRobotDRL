@@ -4,6 +4,7 @@
 /training_data.csv
 /gameplay_data.csv
 /model_weights.h5
+/network_parameters.csv
 /data_plots
 /autotest/autotest_results
 /autotest/robot_steps

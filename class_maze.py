@@ -286,7 +286,7 @@ class Maze:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             heuristic = self.manhattan_distance(robot_x, robot_y, self.goal_pt[0], self.goal_pt[1])
             norm_heuristic = heuristic/self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1])
-            return -0.5*norm_heuristic
+            return -0.4*norm_heuristic
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]
