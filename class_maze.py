@@ -279,7 +279,7 @@ class Maze:
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
             return 10
         # Robot has already visited this spot
-        if (robot_x, robot_y) in self.traversed:
+        if (robot_x, robot_y) == self.traversed[-1]:
             return -0.7
             # return -0.25
         else:
@@ -287,6 +287,7 @@ class Maze:
             heuristic = self.manhattan_distance(robot_x, robot_y, self.goal_pt[0], self.goal_pt[1])
             norm_heuristic = heuristic/self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1])
             return -0.4*norm_heuristic
+
     
     def game_over(self):
         robot_x, robot_y = self.robot_location[0], self.robot_location[1]

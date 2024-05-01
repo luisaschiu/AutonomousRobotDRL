@@ -25,13 +25,13 @@ class DQN:
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
         # self.replay_start_size = maze_size**3*8*8 # nrows^3
-        self.replay_start_size = maze_size**3*2
+        self.replay_start_size = maze_size**3*8*8
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
         # self.final_exploration_frame = 12  # This performed better than the past
         # self.final_exploration_frame = maze_size*250*8*2 # Josh uses: (nrows^3*5)
-        self.final_exploration_frame = maze_size*250*2
+        self.final_exploration_frame = maze_size*250*8*2
         self.learning_rate = 0.001
         self.minibatch_size = 32
         self.max_steps_per_episode = maze_size*5 # nrows^2
@@ -453,6 +453,7 @@ class DQN:
                 writer.writerow([key, value])
 
         for episode in range(num_episodes):
+            game_win = 0
             self.cur_stacked_images.clear()
             episode_step = 0
             episode_score = 0.0
@@ -510,10 +511,12 @@ class DQN:
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     maze.produce_video(str(episode), 'training_episode_videos')
                     # break
+                    if reward == 10:
+                        game_win = 1
             if episode == 0:
-                self.save_to_csv([episode, episode_score, episode_step, expl_rate, index_of_maze], "training_data.csv", ["Episode", "Reward", "Steps", "Expl Rate", "Maze Num"])
+                self.save_to_csv([episode, episode_score, episode_step, expl_rate, game_win, index_of_maze], "training_data.csv", ["Episode", "Reward", "Steps", "Expl Rate", "Game Status", "Maze Num"])
             else:
-                self.save_to_csv([episode, episode_score, episode_step, expl_rate, index_of_maze], "training_data.csv", None)
+                self.save_to_csv([episode, episode_score, episode_step, expl_rate, game_win, index_of_maze], "training_data.csv", None)
         self.model.save_weights("model_weights.h5")
         self.save_plots()
             # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)

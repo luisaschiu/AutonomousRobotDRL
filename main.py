@@ -178,7 +178,7 @@ def TestCase3():
     #     print("Program Exited.")
         
 if __name__ == "__main__":
-    TestCase2()
+    TestCase3()
     # # Using a 4x4 maze:
     # # Testing dynamic mazes:
     # maze_array1 = np.array(

@@ -12,3 +12,4 @@
 /autotest//gameplay_episode_videos
 /autotest/data.csv
 /autotest/__pycache__
+*.h5
