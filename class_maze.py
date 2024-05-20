@@ -280,6 +280,7 @@ class Maze:
             return 10
         # Robot has already visited this spot
         if (robot_x, robot_y) in self.traversed:
+        # if len(self.traversed) != 0 and (robot_x, robot_y) == self.traversed[-1]:
         # if (robot_x, robot_y) == self.traversed[-1]:
             return -0.8
             # return -0.25
