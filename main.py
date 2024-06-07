@@ -39,7 +39,7 @@ def TestCase0():
     [0.0, 1.0, 0.0, 0.0]])
     maze_size = 4
     marker_filepath = "images/marker8.jpg"
-    maze1 = Maze(maze_array1, marker_filepath, (0, 1), (3,3), 18)
+    maze1 = Maze(maze_array1, marker_filepath, (0, 1), (3,3), 180)
     maze1.generate_img(0)
     network = DQN((120, 120), maze_size)
     # network.train_agent_static(maze1, 200)
@@ -81,7 +81,7 @@ def TestCase2():
     # Using a 4x4 maze:
     # Testing dynamic mazes:
     maze_array1 = np.array(
-    [[0.0, 1.0, 1.0, 0.0],
+    [[0.0, 0.0, 1.0, 0.0],
     [0.0, 0.0, 0.0, 0.0],
     [1.0, 1.0, 0.0, 1.0],
     [0.0, 1.0, 0.0, 0.0]])
