@@ -20,19 +20,16 @@ class Maze:
         # print(self.maze.shape)
         # print(start_pt)
         if start_pt[0] < 0.0 or start_pt[0] > (self.maze.shape[0]-1) or start_pt[1] < 0.0 or start_pt[1] > (self.maze.shape[0]-1):
-        # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
             raise MazeError("Defined start point is out of boundaries. Ensure you choose a valid start point within the maze boundaries.")
-        elif self.maze[start_pt[0], start_pt[1]] == 1.0:
+        elif self.maze[start_pt[1], start_pt[0]] == 1.0:
             raise MazeError("Defined start point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.start_pt = start_pt
         if goal_pt[0] < 0.0 or goal_pt[0] > (self.maze.shape[0]-1) or goal_pt[1] < 0.0 or goal_pt[1] > (self.maze.shape[0]-1):
-        # if start_pt[0] < 0.0 or start_pt[1] < 0.0:
             raise MazeError("Defined goal point is out of boundaries. Ensure you choose a valid goal point within the maze boundaries.")
-        elif self.maze[goal_pt[0], goal_pt[1]] == 1.0:
+        elif self.maze[goal_pt[1], goal_pt[0]] == 1.0:
             raise MazeError("Defined goal point cannot be a maze wall. Ensure you choose a free space within the maze.")
         self.goal_pt = goal_pt
         self.traversed = []
-        # self.min_reward = -0.5*maze.size
         self.total_reward = 0
 
     def show(self):
@@ -68,6 +65,64 @@ class Maze:
         plt.show()
         return img
 
+
+    def show_game(self, q_values):
+        # print(self.robot_location)
+        # print(self.start_pt)
+        # plt.grid(True)
+        nrows, ncols = self.maze.shape
+        # print(self.maze.shape)
+        ax = plt.gca()
+        ax.set_xticks(np.arange(0.5, nrows, 1))
+        ax.set_yticks(np.arange(0.5, ncols, 1))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
+        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        self.maze[self.start_pt[1], self.start_pt[0]] = 0.3
+        self.maze[self.goal_pt[1], self.goal_pt[0]] = 0.6
+        # Overlay marker onto the robot location
+        # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
+        marker = self.marker
+        marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
+        imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
+        # TODO: Make zoom relative to maze size above, or else changing to a 
+        # larger maze may make the marker image too large compared to small maze squares
+        ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
+        ax.add_artist(ab)
+        # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
+        # Color the traversed locations
+        # for x, y in self.traversed:
+        #     # NOTE: Numpy array axes are different from what I defined as the axes.
+        #     self.maze[y, x] = 0.5
+        # if q_values[0][1] != float('-inf'):
+        #     self.maze[self.robot_location[1]+1, self.robot_location[0]] = q_values[0][1]
+        img = plt.imshow(self.maze, interpolation='none', cmap='binary', alpha = 0.8)
+        # plt.title('Maze Walls')
+
+
+        # Plot Q-values using hot colormap
+        # maze_copy = self.maze.copy()
+        # print(self.maze.shape)
+        # ax2 = plt.gca()
+        # ax2.set_xticks(np.arange(0.5, nrows, 1))
+        # ax2.set_yticks(np.arange(0.5, ncols, 1))
+        # ax2.set_xticks([])
+        # ax2.set_yticks([])
+        test_numpy = np.ones((nrows, ncols))
+        test_numpy[1, 0]=0.8
+        # test_numpy[1, 1]=0.2
+        # if q_values[0][1] != float('-inf'):
+        #     test_numpy[self.robot_location[1]+1, self.robot_location[0]] = q_values[0][1]
+        print(test_numpy)
+        plt.imshow(test_numpy, cmap='hot', alpha = 0.2)  # Set alpha for transparency
+        # plt.title('Q-Values')
+        #TODO: Create a 4x4 numpy array with the q-values corresponding to the current robot position, 
+        # with everything else equal to 1 for the q-value heat map.
+        plt.colorbar()  # Add color bar for Q-values
+        plt.show()
+        return img
+    
     def generate_img(self, time_step):
         IMAGE_DIGITS = 2 # images go up to two digits, used to prepend 0's to the front of image names
         # plt.grid(True)
@@ -279,17 +334,17 @@ class Maze:
         if robot_x == self.goal_pt[0] and robot_y == self.goal_pt[1]:
             return 10
         # Robot has already visited this spot
-        if (robot_x, robot_y) in self.traversed:
-        # if len(self.traversed) != 0 and (robot_x, robot_y) == self.traversed[-1]:
-        # if (robot_x, robot_y) == self.traversed[-1]:
-            return -0.8
+        # if (robot_x, robot_y) in self.traversed:
+        # # if len(self.traversed) != 0 and (robot_x, robot_y) == self.traversed[-1]:
+        # # if (robot_x, robot_y) == self.traversed[-1]:
+        #     return -0.8
             # return -0.25
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             heuristic = self.manhattan_distance(robot_x, robot_y, self.goal_pt[0], self.goal_pt[1])
             norm_heuristic = heuristic/self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1])
             # return -0.4*norm_heuristic
-            return -0.4*norm_heuristic
+            return -(heuristic**2)
 
     
     def game_over(self):

@@ -5,6 +5,7 @@ import random
 from class_maze import Maze, deleteGifs
 from tensorflow.keras import initializers, models, optimizers, metrics, losses
 from tensorflow.keras.layers import  Conv2D, Flatten, Dense, Lambda, Input, Rescaling
+from tensorflow.keras.utils import plot_model
 import cv2 as cv
 import itertools
 import csv
@@ -25,7 +26,7 @@ class DQN:
         self.replay_memory_capacity=10000000
         self.replay_memory = deque(maxlen=self.replay_memory_capacity)
         # self.replay_start_size = maze_size**3*8*8 # nrows^3
-        self.replay_start_size = maze_size**3
+        self.replay_start_size = maze_size**3*2
         self.discount_factor = 0.99 # Also known as gamma
         self.init_exploration_rate = 1.0 # Exploration rate, also known as epsilon
         self.final_exploration_rate = 0.1
@@ -53,6 +54,8 @@ class DQN:
         self.loss_lst = []
         self.total_step_loss_lst = []
         self.expl_rate_lst = []
+        # plot_model(self.model, to_file='model_plot.png', show_shapes=True, show_layer_names=True, expand_nested=True, dpi=96)
+
 
     def build_model(self):
         # NOTE: Random weights are initialized, might want to include an option to load weights from a file to continue training
@@ -559,6 +562,29 @@ class DQN:
                 # print(array)
                 masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
                 # print(masked_qval_array)
+                # map_masked_qval_array = np.where(masked_qval_array == -np.inf, np.nan, masked_qval_array)
+                # # Find the minimum value ignoring NaNs
+                # min_value = np.nanmin(map_masked_qval_array)
+                # max_value = np.nanmax(map_masked_qval_array)
+                # if max_value == min_value:
+                #     normalized_q_values = masked_qval_array/min_value*0.8
+                # else:
+                #     normalized_q_values = ((masked_qval_array - min_value) / (max_value - min_value))+0.2 *0.8
+                # print("min: ", min_value)
+                # print("max: ", max_value)
+                # print("normalized array: ", normalized_q_values)
+
+                # maze.show_game(normalized_q_values)
+                # image = state[0]
+                # print(image)
+                # plt.imshow(normalized_q_values, cmap='hot', interpolation='nearest')
+                # plt.colorbar()
+                # plt.show()
+                # print("min: ", np.min(masked_qval_array))
+                # print(masked_qval_array[0][1])
+                # if masked_qval_array[0][1] != float('-inf'):
+                #     print(masked_qval_array[0][1])
+                
                 max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
 
                 # if episode_step == 0 and episode == 0:
