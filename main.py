@@ -168,21 +168,21 @@ def TestCase3():
     # maze_size = 8
 
     marker_filepath = "images/marker8.jpg"
-    maze1 = Maze(maze_array1, marker_filepath, (0,0), (3,3), 180)
+    maze1 = Maze(maze_array1, marker_filepath, (0,0), (3,3), 180, slip_flag=True)
     # maze1.show()
-    maze2 = Maze(maze_array2, marker_filepath, (1,0), (3,3), 270)
+    maze2 = Maze(maze_array2, marker_filepath, (1,0), (3,3), 270, slip_flag=True)
     # maze2.show()
-    maze3 = Maze(maze_array3, marker_filepath, (3,3), (3,0), 180)
+    maze3 = Maze(maze_array3, marker_filepath, (3,3), (3,0), 180, slip_flag=True)
     # maze3.show()
-    maze4 = Maze(maze_array4, marker_filepath, (0,0), (3,3), 180)
+    maze4 = Maze(maze_array4, marker_filepath, (0,0), (3,3), 180, slip_flag=True)
     # maze4.show()
-    maze5 = Maze(maze_array5, marker_filepath, (0,0), (0,3), 180)
+    maze5 = Maze(maze_array5, marker_filepath, (0,0), (0,3), 180, slip_flag=True)
     # maze5.show()
-    maze6 = Maze(maze_array6, marker_filepath, (3,3), (0,0), 90)
+    maze6 = Maze(maze_array6, marker_filepath, (3,3), (0,0), 90, slip_flag=True)
     # maze6.show()
-    maze7 = Maze(maze_array7, marker_filepath, (3,3), (1,1), 90)
+    maze7 = Maze(maze_array7, marker_filepath, (3,3), (1,1), 90, slip_flag=True)
     # maze7.show()
-    maze8 = Maze(maze_array8, marker_filepath, (3,3), (0,0), 90)
+    maze8 = Maze(maze_array8, marker_filepath, (3,3), (0,0), 90, slip_flag=True)
     # maze8.show()
     network = DQN((120, 120), maze_size)
     # network.train_agent_static(maze1, 200)
@@ -221,10 +221,10 @@ def TestCase4():
     maze_size = 10
 
     marker_filepath = "images/marker8.jpg"
-    maze1 = Maze(maze_array1, marker_filepath, (0,0), (9,9), 180)
+    maze1 = Maze(maze_array1, marker_filepath, (0,0), (9,9), 180, slip_flag=True)
     # maze1.show()
     network = DQN((120, 120), maze_size)
-    # network.train_agent_static(maze1, 200, heuristics_flag=True)
+    network.train_agent_static(maze1, 200, heuristics_flag=True)
     new_network = DQN((120, 120), maze_size)
     new_network.play_game_static(maze1, 100, "model_weights.h5")
     
@@ -698,7 +698,7 @@ def TestCase6():
     # new_network.play_game_dynamic([new_maze1, new_maze2, new_maze3, new_maze4, new_maze5, new_maze6, new_maze7, new_maze8], 200, "run64_model_weights.h5")
 
 if __name__ == "__main__":
-    TestCase0()
+    TestCase4()
     # # Using a 4x4 maze:
     # # Testing dynamic mazes:
     # maze_array1 = np.array(
