@@ -39,8 +39,10 @@ def TestCase0():
     [0.0, 1.0, 0.0, 0.0]])
     maze_size = 4
     marker_filepath = "images/marker8.jpg"
-    maze1 = Maze(maze_array1, marker_filepath, (0, 1), (3,3), 180)
+    maze1 = Maze(maze_array1, marker_filepath, (0, 0), (3,3), 270)
     maze1.generate_img(0)
+    maze2 = Maze(maze_array1, marker_filepath, (0, 0), (3,3), 180)
+    maze2.generate_img(1)
     network = DQN((120, 120), maze_size)
     # network.train_agent_static(maze1, 200)
     # new_network = DQN((120, 120), maze_size)
