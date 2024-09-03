@@ -12,4 +12,6 @@
 /autotest//gameplay_episode_videos
 /autotest/data.csv
 /autotest/__pycache__
+/gameplay_path_visual
+/gameplay_path_visual_line
 *.h5

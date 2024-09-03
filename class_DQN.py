@@ -41,11 +41,12 @@ class DQN:
         self.agent_history_length = 4 # Number of images from each timestep stacked
         self.model = self.build_model()
         self.target_model = models.clone_model(self.model)
+        # self.update_target_network_freq = maze_size*6 
         self.update_target_network_freq = maze_size*6 
         self.cur_stacked_images = deque(maxlen=self.agent_history_length)
         # From Google article pseudocode line 3: Initialize action-value function Q^hat(target network) with same weights as Q
         self.target_model.set_weights(self.model.get_weights())
-        # optimizer = optimizers.RMSProp(learning_rate= self.learning_rate),loss='mse') # From paper info, maybe misinterpreted?
+        # self.optimizer = optimizers.RMSprop(learning_rate= self.learning_rate) # From paper info, maybe misinterpreted?
         self.optimizer = optimizers.Adam(learning_rate=self.learning_rate, epsilon=1e-6)
         self.loss_metric = metrics.Mean(name="loss")
         self.Q_value_metric = metrics.Mean(name="Q_value")
@@ -86,9 +87,7 @@ class DQN:
         else:
             array=self.model.predict(state)
             # Copy array so we don't alter the original q-value array in case we want to look at it
-            # print(array)
             masked_qval_array = np.where(np.array(available_actions) == 1, array, float('-inf'))
-            # print(masked_qval_array)
             max_val_index = np.argmax(np.max(masked_qval_array, axis=0))
             return self.actions_list[max_val_index]
         
@@ -181,6 +180,7 @@ class DQN:
             # print(main_q_dim)
             # print(expected_q_dim)
             loss = losses.Huber(reduction=losses.Reduction.NONE)
+            # loss = losses.MeanSquaredError(reduction=losses.Reduction.NONE)
             loss_val = loss(tf.stop_gradient(expected_q_dim), main_q_dim)
             # print(loss_val)
 
@@ -253,7 +253,7 @@ class DQN:
     def preprocess_image(self, time_step, new_image):
         # Get rid of the 3 color channels, convert to grayscale
         new_image = cv.cvtColor(new_image, cv.COLOR_BGR2GRAY)
-        new_image = cv.resize(new_image, (120, 120))
+        new_image = cv.resize(new_image, (self.state_size[0], self.state_size[1]))
         # If it is the start of the game (time_step = 0), append the start configuration 4 times as initial input to the neural network model.
         if time_step == 0:
             self.cur_stacked_images.append(new_image)
@@ -488,7 +488,6 @@ class DQN:
                     (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
                 next_state_available_actions = maze.get_available_actions()
-                # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
                 next_state = self.preprocess_image(episode_step, next_state_img)
                 # From Google article pseudocode line 8: Store transition/experience in D(replay memory)
@@ -497,12 +496,9 @@ class DQN:
                 if (total_step % self.agent_history_length == 0) and (total_step > self.replay_start_size):
                     print("Generating minibatch and updating main model")
                     state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch = self.generate_minibatch_samples()
-                    # print("next_state_available_actions_batch")
-                    # print(next_state_available_actions_batch)
                     loss = self.update_main_model(state_batch, action_batch, reward_batch, next_state_batch, terminal_batch, next_state_available_actions_batch)
                     self.total_step_loss_lst.append(total_step)
                     self.loss_lst.append(loss.numpy())
-                    # print('Loss: ' + str(loss.numpy()))
                 if episode_step == self.max_steps_per_episode:
                     game_over = True
                 # From Google article pseudocode line 12: Every C steps reset Q^hat = Q
@@ -514,7 +510,6 @@ class DQN:
                     print('Game Over.')
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     maze.produce_video(str(episode), 'training_episode_videos')
-                    # break
                     if reward == 10:
                         game_win = 1
             if episode == 0:
@@ -523,22 +518,8 @@ class DQN:
                 self.save_to_csv([episode, episode_score, episode_step, expl_rate, game_win, index_of_maze], "training_data.csv", None)
         self.model.save_weights("model_weights.h5")
         self.save_plots()
-            # plot_thread = threading.Thread(target=self.plot_thread, daemon=True)
-            # plot_thread.start()
-                # print("total steps: ", total_step)
-                    
-                # if game_over == 'win':
-                #     self.win_history.append(1)
-                #     print('win') #TODO: Finish this print statement to provide more information
-                #     break
-                # elif game_over == 'lose':
-                #     self.win_history.append(0)
-                #     print('lose')
-                #     break
-                # If episode does not terminate... continue onto last lines of pseudocode
-                # From Google article pseudocode line 11: Perform a gradient descent step (done in update_main_model)
 
-    def play_game_static(self, maze:Maze, num_episodes, load_weight_dir=None):
+    def play_game_static(self, maze:Maze, num_episodes, load_weight_dir=None, heuristics_flag = False):
         print("Playing game...")
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
@@ -596,7 +577,10 @@ class DQN:
                 total_step += 1
                 episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                if heuristics_flag:
+                    (next_state_img, reward, game_over) = maze.take_action_heuristics(action, episode_step)
+                else:
+                    (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
                 # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)
@@ -611,6 +595,8 @@ class DQN:
                     else:
                         status = 1
                         print('Game Over. WIN!')
+                    # print('ep score: ', episode_score)
+                    # print('ep score str: ', str(episode_score))
                     print('Episode Num: ' + str(episode) + ', Episode Rewards: ' + str(episode_score) + ', Num Steps Taken: ' + str(episode_step))
                     # save data to .csv file
                     if episode == 0:
@@ -618,8 +604,10 @@ class DQN:
                     else:
                         self.save_to_csv([episode, episode_score, episode_step, status], "gameplay_data.csv", None)
                     maze.produce_video(str(episode), 'gameplay_episode_videos')
+                    # maze.save_gameplay_path(episode)
+                    maze.save_gameplay_path_line(episode)
 
-    def play_game_dynamic(self, maze_lst, num_episodes, load_weight_dir=None):
+    def play_game_dynamic(self, maze_lst, num_episodes, load_weight_dir=None, heuristics_flag = False):
         print("Playing game...")
         if load_weight_dir is not None:
             self.model.load_weights(load_weight_dir)
@@ -642,7 +630,10 @@ class DQN:
                 total_step += 1
                 episode_step += 1
                 # From Google article pseudocode line 6: Execute action a_t in emulator and observe reward rt and image x_t+1
-                (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
+                if heuristics_flag:
+                    (next_state_img, reward, game_over) = maze.take_action_heuristics(action, episode_step)
+                else:
+                    (next_state_img, reward, game_over) = maze.take_action(action, episode_step)
                 episode_score += reward
                 # next_state_available_actions_filtered = [0 if x is None else x for x in next_state_available_actions]
                 # From Google article pseudocode line 7: Set s_t+1 = s_t, a_t, x_t+1 and preprocess phi_t+1 = phi(s_t+1)

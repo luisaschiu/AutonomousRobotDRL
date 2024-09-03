@@ -168,13 +168,109 @@ class Maze:
         cv.waitKey(1)
         return image
 
-        
+    def save_gameplay_path(self, episode_num):
+        IMAGE_DIGITS = 2 # images go up to two digits, used to prepend 0's to the front of image names
+        # plt.grid(True)
+        nrows, ncols = self.maze.shape
+        # print(self.maze.shape)
+        ax = plt.gca()
+        ax.set_xticks(np.arange(0.5, nrows, 1))
+        ax.set_yticks(np.arange(0.5, ncols, 1))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
+        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        self.maze[self.start_pt[1], self.start_pt[0]] = 0.3
+        self.maze[self.goal_pt[1], self.goal_pt[0]] = 0.6
+        # Overlay marker onto the robot location
+        # Code from: https://towardsdatascience.com/how-to-add-an-image-to-a-matplotlib-plot-in-python-76098becaf53
+        # marker = self.marker
+        # marker = np.rot90(self.marker, k=self.robot_orientation) # k = 1 means rotate it 90 degrees CC
+        # imagebox = OffsetImage(marker, zoom = 1/(nrows+1), cmap = 'gray')
+        # # TODO: Make zoom relative to maze size above, or else changing to a 
+        # # larger maze may make the marker image too large compared to small maze squares
+        # ab = AnnotationBbox(imagebox, (self.robot_location[0], self.robot_location[1]), frameon = False)
+        # ax.add_artist(ab)
+        # self.maze[self.robot_location[0], self.robot_location[1]] = 0.7
+        # Color the traversed locations
+        for x, y in self.traversed:
+            # NOTE: Numpy array axes are different from what I defined as the axes.
+            self.maze[y, x] += 0.2
+        plt.imshow(self.maze, interpolation='none', cmap='binary')
+        # Check if folder/file path exists. If not, create one.
+        if not os.path.exists('gameplay_path_visual/'):
+            os.makedirs('gameplay_path_visual/')
+        # Save as a .jpg picture, named as current time step
+        image_num = str(episode_num)
+        image_num = (IMAGE_DIGITS - len(image_num)) * "0" + image_num
+        fig = plt.savefig('gameplay_path_visual/' + image_num + '.jpg', bbox_inches='tight')
+        # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
+        plt.close(fig)
+        image = cv.imread('gameplay_path_visual/' + image_num + '.jpg')
+        # cv.imshow('Frame', image)
+        # cv.waitKey(1)
+        return image
+
+    def save_gameplay_path_line(self, episode_num):
+        IMAGE_DIGITS = 2 # images go up to two digits, used to prepend 0's to the front of image names
+        # plt.grid(True)
+        nrows, ncols = self.maze.shape
+        # print(self.maze.shape)
+        ax = plt.gca()
+        ax.set_xticks(np.arange(0.5, nrows, 1))
+        ax.set_yticks(np.arange(0.5, ncols, 1))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        # ax.text(self.start_pt[0]-0.2, self.start_pt[1]+0.05, 'START', color = 'green')
+        # ax.text(self.goal_pt[0]-0.2, self.goal_pt[1]+0.05, 'GOAL', color = 'red')
+        self.maze[self.start_pt[1], self.start_pt[0]] = 0.3
+        self.maze[self.goal_pt[1], self.goal_pt[0]] = 0.6
+        # Color the traversed locations
+        # for x, y in self.traversed:
+        #     # NOTE: Numpy array axes are different from what I defined as the axes.
+        #     start = (2, 3)
+        #     end = (8, 7)
+        #     # Draw the line from start to end
+        #     plt.plot([start[1], end[1]], [start[0], end[0]], color='red')
+
+        #     self.maze[y, x] += 0.2
+        # NOTE: Edit this part to get lines and test for the for i in range logic
+        for i in range(0, len(self.traversed)-1):
+            # NOTE: Numpy array axes are different from what I defined as the axes.
+            start = (self.traversed[i][1], self.traversed[i][0])
+            end = (self.traversed[i+1][1], self.traversed[i+1][0])
+            # Draw the line from start to end
+            plt.plot([start[1], end[1]], [start[0], end[0]], color='red', linewidth = 2)
+        # print('start: ', start)
+        # print('end: ', end)
+        # print([start[0], end[0]], [self.robot_location[1],self.robot_location[0]])
+        plt.plot([end[1], self.robot_location[1]], [end[0],self.robot_location[0]], color='red', linewidth = 2)
+            # self.maze[y, x] += 0.2
+
+        plt.imshow(self.maze, interpolation='none', cmap='binary')
+        # Check if folder/file path exists. If not, create one.
+        if not os.path.exists('gameplay_path_visual_line/'):
+            os.makedirs('gameplay_path_visual_line/')
+        # Save as a .jpg picture, named as current time step
+        image_num = str(episode_num)
+        image_num = (IMAGE_DIGITS - len(image_num)) * "0" + image_num
+        fig = plt.savefig('gameplay_path_visual_line/' + image_num + '.jpg', bbox_inches='tight')
+        # fig = plt.savefig('robot_steps/' + str(self.time_step) + '.jpg', bbox_inches=Bbox.from_bounds(1, 1, 4, 4))
+        plt.close(fig)
+        image = cv.imread('gameplay_path_visual_line/' + image_num + '.jpg')
+        # cv.imshow('Frame', image)
+        # cv.waitKey(1)
+        return image
+    
     def reset(self, time_step):
         for filename in glob.glob('robot_steps/*.jpg'):
             os.remove(filename)
         self.maze = self.init_maze
         self.robot_location = self.start_pt
         self.robot_orientation = self.init_orientation//90
+        for x, y in self.traversed:
+            # NOTE: Numpy array axes are different from what I defined as the axes.
+            self.maze[y, x] = 0
         # self.traversed = np.array([])
         # Reset previously traversed locations for the next episode
         self.traversed = []
@@ -352,12 +448,13 @@ class Maze:
         if (robot_x, robot_y) in self.traversed:
         # # if len(self.traversed) != 0 and (robot_x, robot_y) == self.traversed[-1]:
         # # if (robot_x, robot_y) == self.traversed[-1]:
-            return -0.7
+            return -0.9
             # return -0.25
         else:
             # Advanced onto a new spot in the maze, but hasn't reached the goal or gone backwards
             heuristic = self.manhattan_distance(robot_x, robot_y, self.goal_pt[0], self.goal_pt[1])
             norm_heuristic = heuristic/self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1])
+            # print(self.manhattan_distance(self.start_pt[0], self.start_pt[1], self.goal_pt[0], self.goal_pt[1]))
             return -0.4*norm_heuristic
             # return -(heuristic**2)
 
